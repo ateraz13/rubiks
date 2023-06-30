@@ -3,8 +3,10 @@
 #include "gfx.hxx"
 #include <array>
 #include <cstdint>
+#include <map>
 
 class RubiksCube {
+public:
   using CellID = int;
   // Returns negative number if not cell was intersected.
   CellID ray_intersection(Ray ray) const;
@@ -29,11 +31,11 @@ private:
 
 class GameSettings {
 
-    GameSettings();
-    GameSettings(const GameSettings& other);
+  GameSettings();
+  GameSettings(const GameSettings &other);
 
-    void get_graphical_settings() const;
-    void set_graphical_settings() const;
+  void get_graphical_settings() const;
+  void set_graphical_settings() const;
 };
 
 class Game {
@@ -55,6 +57,26 @@ private:
   uint64_t m_current_time;
   uint64_t delta_time;
   bool m_is_running;
+
+  using KeyboardKey = int;
+
+  enum Action {
+    ROTATE_1ST_COLUMN_FORWARD = 0,
+    ROTATE_2ND_COLUMN_FORWARD,
+    ROTATE_3RD_COLUMN_FORWARD,
+    ROTATE_1ST_COLUMN_BACKWARDS,
+    ROTATE_2ND_COLUMN_BACKWARDS,
+    ROTATE_3RD_COLUMN_BACKWARDS,
+    ROTATE_1ST_ROW_FORWARD,
+    ROTATE_2ND_ROW_FORWARD,
+    ROTATE_3RD_ROW_FORWARD,
+    ROTATE_1ST_ROW_BACKWARDS,
+    ROTATE_2ND_ROW_BACKWARDS,
+    ROTATE_3RD_ROW_BACKWARDS,
+    ACTION_COUNT
+  };
+
+  std::map<KeyboardKey, Action> m_keymap;
 };
 
 #endif // GAME_HXX
