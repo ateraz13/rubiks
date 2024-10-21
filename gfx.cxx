@@ -1,19 +1,20 @@
 #include "gfx.hxx"
 #include <cstring>
+#include <utility>
 
 using namespace gfx;
 
-GraphicalSettings::GraphicalSettings() : m_window_res(800, 600) {}
+GraphicalSettings::GraphicalSettings() : m_window_res {800, 600} {}
 
 GraphicalSettings::GraphicalSettings(int res[2])
-    : m_window_res(res[0], res[1]) {}
+    : m_window_res {res[0], res[1]} {}
 
-GraphicalSettings::GraphicalSettings(int ww, int wh) : m_window_res(ww, wh) {}
+GraphicalSettings::GraphicalSettings(int ww, int wh) : m_window_res {ww, wh} {}
 
 // FIXME: Check if settings are equal if yes than return don't update "changed"
 // status.
 GraphicalSettings::GraphicalSettings(const GraphicalSettings &other) {
-  std::memcpy(this, &other, sizeof(GraphicalSettings));
+  std::memcpy(m_window_res, other.m_window_res, sizeof(m_window_res));
   m_has_changed = true;
 }
 
@@ -49,5 +50,3 @@ GraphicalSettings Graphics::get_settings() const { return m_settings; }
 void Graphics::update_settings(GraphicalSettings settings) {
   m_settings = settings;
 }
-
-GraphicalSettings Graphics::get_settings() const { return m_settings; }

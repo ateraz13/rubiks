@@ -1,15 +1,20 @@
 #ifndef GAME_HXX
 #define GAME_HXX
-#include "gfx.hxx"
+#include <GLFW/glfw3.h>
 #include <array>
 #include <cstdint>
 #include <map>
+#include <string>
+#include <memory>
+#include "geom.hxx"
+#include "gfx.hxx"
+#include "utility.hxx"
 
 class RubiksCube {
 public:
   using CellID = int;
   // Returns negative number if not cell was intersected.
-  CellID ray_intersection(Ray ray) const;
+  CellID ray_intersection(geom::Ray ray) const;
 
   void rotate_1st_column_forward();
   void rotate_2nd_column_forward();
@@ -29,18 +34,9 @@ private:
   std::array<CellID, 9 * 3> m_cells;
 };
 
-class GameSettings {
-
-  GameSettings();
-  GameSettings(const GameSettings &other);
-
-  void get_graphical_settings() const;
-  void set_graphical_settings() const;
-};
-
 class Game {
-
-  explicit Game(GameSettings settings);
+public:
+  Game();
   ~Game();
 
   void start();
@@ -51,6 +47,8 @@ class Game {
   void get_current_time() const;
 
 private:
+  void update_current_time();
+
   RubiksCube m_rcube;
   gfx::Graphics m_gfx;
   uint64_t m_last_time;
@@ -76,7 +74,16 @@ private:
     ACTION_COUNT
   };
 
+  void init_window_system();
+  void init_input_system();
+
   std::map<KeyboardKey, Action> m_keymap;
+  float m_animation_speed;
+  std::shared_ptr<GLFWwindow> main_window;
 };
 
-#endif // GAME_HXX
+extern const int MAIN_WINDOW_DEFAULT_HEIGHT;
+extern const int MAIN_WINDOW_DEFAULT_WIDTH;
+extern const char* MAIN_WINDOW_DEFAULT_TITLE;
+
+#endif //GAME_HXX
