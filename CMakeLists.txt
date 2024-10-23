@@ -17,4 +17,3 @@ add_executable(rubiks main.cxx gfx.cxx geom.cxx game.cxx ${GLAD_ROOT_DIR}/src/gl
 
 set_property(TARGET rubiks PROPERTY CXX_STANDARD 20)
 target_link_libraries(rubiks PRIVATE glm::glm glfw)
-}
