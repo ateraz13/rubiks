@@ -1,11 +1,13 @@
 #ifndef GAME_HXX
 #define GAME_HXX
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <array>
 #include <cstdint>
 #include <map>
 #include <string>
 #include <memory>
+#include <queue>
 #include "geom.hxx"
 #include "gfx.hxx"
 #include "utility.hxx"
@@ -36,30 +38,52 @@ private:
 
 class Game {
 public:
-  Game();
   ~Game();
+
+  static Game& instance() {
+    static Game game;
+    return game;
+  }
 
   void start();
   void update();
   void stop();
 
   void save(const std::string &name);
-  void get_current_time() const;
+  double get_current_time() const;
 
+  // We don't want assignment or copying to happen.
+  void operator=(const Game& other) = delete;
+  Game(const Game& other) = delete;
+
+  using KeyboardKey = int;
+
+  enum struct KeyState {
+    PRESSED, RELEASED
+  };
+
+  struct KeyEvent {
+    std::weak_ptr<GLFWwindow> window;
+    KeyboardKey key;
+    KeyState state;
+
+    bool operator<(const KeyEvent& other) const;
+  };
 private:
+  Game();
+
   void update_current_time();
 
   RubiksCube m_rcube;
   gfx::Graphics m_gfx;
   uint64_t m_last_time;
-  uint64_t m_current_time;
+  double m_current_time;
   uint64_t delta_time;
   bool m_is_running;
 
-  using KeyboardKey = int;
-
   enum Action {
-    ROTATE_1ST_COLUMN_FORWARD = 0,
+    QUIT_GAME,
+    ROTATE_1ST_COLUMN_FORWARD,
     ROTATE_2ND_COLUMN_FORWARD,
     ROTATE_3RD_COLUMN_FORWARD,
     ROTATE_1ST_COLUMN_BACKWARDS,
@@ -71,16 +95,20 @@ private:
     ROTATE_1ST_ROW_BACKWARDS,
     ROTATE_2ND_ROW_BACKWARDS,
     ROTATE_3RD_ROW_BACKWARDS,
-    ACTION_COUNT
+    ACTION_COUNT // Always last
   };
 
   void init_window_system();
   void init_input_system();
+  static void handle_inputs(GLFWwindow *win, Game::KeyboardKey key,
+                            int scancode, int action, int mods);
 
-  std::map<KeyboardKey, Action> m_keymap;
   float m_animation_speed;
-  std::shared_ptr<GLFWwindow> main_window;
+  std::shared_ptr<GLFWwindow> m_main_window;
+  std::queue<Action> action_queue;
+  std::map<KeyEvent, Action> m_keymap;
 };
+
 
 extern const int MAIN_WINDOW_DEFAULT_HEIGHT;
 extern const int MAIN_WINDOW_DEFAULT_WIDTH;

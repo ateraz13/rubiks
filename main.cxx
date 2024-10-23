@@ -4,7 +4,9 @@
 
 int main(int argc, char** argv) {
 
-    Game game;
+    auto& game = Game::instance();
+
+    game.start();
 
     std::cout << "Hello, world!\n";
 
