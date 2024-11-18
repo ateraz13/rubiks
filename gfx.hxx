@@ -1,7 +1,7 @@
 #ifndef GFX_HXX
 #define GFX_HXX
 #include <array>
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <iostream>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>

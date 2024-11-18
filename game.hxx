@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <array>
 #include <cstdint>
-#include <glad/glad.h>
+#include <glad/gl.h>
 #include <map>
 #include <memory>
 #include <queue>
