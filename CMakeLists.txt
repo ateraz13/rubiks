@@ -17,7 +17,7 @@ find_package(OpenGL REQUIRED)
 
 include_directories(${GLEW_INCLUDE_DIRS} ${GLFW3_INCLUDE_DIRS} ${GLAD_INCLUDE_DIR})
 # add_executable(rubiks main.cxx gfx.cxx geom.cxx game.cxx utility.cxx ${GLAD_ROOT_DIR}/src/gl.c)
-add_executable(rubiks main.cxx gfx.cxx geom.cxx game.cxx utility.cxx )
+add_executable(rubiks main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.c)
 
 set_property(TARGET rubiks PROPERTY CXX_STANDARD 20)
 target_link_libraries(rubiks PRIVATE glm::glm glfw GLEW::GLEW GL)
