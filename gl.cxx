@@ -1,6 +1,7 @@
 #include "gl.hxx"
+#include <iostream>
 
-void load_opengl_funcs(void* proc) {
+void load_opengl_funcs(gl_loader_func proc) {
 #ifdef USE_GLAD
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
