@@ -4,9 +4,6 @@
 #include "utility.hxx"
 
 int main(int argc, char** argv) {
-
-
-
     auto& game = Game::instance();
 
     game.start();
