@@ -246,7 +246,6 @@ void gfx::SimpleMesh::send_position_data(const glm::vec3 *data,
   glBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(POSITION));
   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * count, data,
                GL_STATIC_DRAW);
-  std::cout << "ATTRIB_ID(POSITION) = " << ATTRIB_ID(POSITION) << std::endl;
   glVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
   glEnableVertexAttribArray(ATTRIB_ID(POSITION));
   glBindVertexArray(0);
@@ -259,7 +258,7 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data,
   glBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(COLOR));
   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * count, data,
                GL_STATIC_DRAW);
-  std::cout << "ATTRIB_ID(COLOR) = " << ATTRIB_ID(COLOR) << std::endl;
+  EXPR_LOG(ATTRIB_ID(COLOR));
   glVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
   glEnableVertexAttribArray(ATTRIB_ID(COLOR));
   glBindVertexArray(0);

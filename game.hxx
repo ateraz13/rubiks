@@ -3,10 +3,11 @@
 #include "geom.hxx"
 #include "gfx.hxx"
 #include "utility.hxx"
+#include "gl.hxx"
 #include <GLFW/glfw3.h>
 #include <array>
 #include <cstdint>
-#include <glad/gl.h>
+// #include <glad/gl.h>
 #include <map>
 #include <memory>
 #include <queue>
