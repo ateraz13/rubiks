@@ -13,7 +13,7 @@ set(GLAD_INCLUDE_DIR ${GLAD_ROOT_DIR}/include)
 add_subdirectory(extern/glfw-3.4)
 
 include_directories(${GLEW_INCLUDE_DIRS} ${GLFW3_INCLUDE_DIRS} ${GLAD_INCLUDE_DIR})
-add_executable(rubiks main.cxx gfx.cxx geom.cxx game.cxx ${GLAD_ROOT_DIR}/src/glad.c)
+add_executable(rubiks main.cxx gfx.cxx geom.cxx game.cxx utility.cxx ${GLAD_ROOT_DIR}/src/glad.c)
 
 set_property(TARGET rubiks PROPERTY CXX_STANDARD 20)
 target_link_libraries(rubiks PRIVATE glm::glm glfw)

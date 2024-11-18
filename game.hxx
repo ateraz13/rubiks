@@ -1,16 +1,16 @@
 #ifndef GAME_HXX
 #define GAME_HXX
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <array>
-#include <cstdint>
-#include <map>
-#include <string>
-#include <memory>
-#include <queue>
 #include "geom.hxx"
 #include "gfx.hxx"
 #include "utility.hxx"
+#include <GLFW/glfw3.h>
+#include <array>
+#include <cstdint>
+#include <glad/glad.h>
+#include <map>
+#include <memory>
+#include <queue>
+#include <string>
 
 class RubiksCube {
 public:
@@ -40,10 +40,7 @@ class Game {
 public:
   ~Game();
 
-  static Game& instance() {
-    static Game game;
-    return game;
-  }
+  static Game &instance();
 
   void start();
   void update();
@@ -52,30 +49,27 @@ public:
   void save(const std::string &name);
   double get_current_time() const;
 
-  // We don't want assignment or copying to happen.
-  void operator=(const Game& other) = delete;
-  Game(const Game& other) = delete;
+  void operator=(const Game &other) = delete;
+  Game(const Game &other) = delete;
 
   using KeyboardKey = int;
 
-  enum struct KeyState {
-    PRESSED, RELEASED
-  };
+  enum struct KeyState { PRESSED, RELEASED };
 
   struct KeyEvent {
     std::weak_ptr<GLFWwindow> window;
     KeyboardKey key;
     KeyState state;
 
-    bool operator<(const KeyEvent& other) const;
+    bool operator<(const KeyEvent &other) const;
   };
+
 private:
   Game();
 
   void update_current_time();
 
   RubiksCube m_rcube;
-  gfx::Graphics m_gfx;
   uint64_t m_last_time;
   double m_current_time;
   uint64_t delta_time;
@@ -107,11 +101,11 @@ private:
   std::shared_ptr<GLFWwindow> m_main_window;
   std::queue<Action> action_queue;
   std::map<KeyEvent, Action> m_keymap;
+  gfx::Graphics m_gfx;
 };
-
 
 extern const int MAIN_WINDOW_DEFAULT_HEIGHT;
 extern const int MAIN_WINDOW_DEFAULT_WIDTH;
-extern const char* MAIN_WINDOW_DEFAULT_TITLE;
+extern const char *MAIN_WINDOW_DEFAULT_TITLE;
 
-#endif //GAME_HXX
+#endif // GAME_HXX

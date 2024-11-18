@@ -1,8 +1,11 @@
 #include <iostream>
 #include "gfx.hxx"
 #include "game.hxx"
+#include "utility.hxx"
 
 int main(int argc, char** argv) {
+
+
 
     auto& game = Game::instance();
 

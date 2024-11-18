@@ -1,12 +1,22 @@
 #ifndef GFX_HXX
 #define GFX_HXX
+#include <array>
+#include <glad/glad.h>
+#include <iostream>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace gfx {
 
-  /* NOTE: The graphical settings are stored in a separate class because
-    I wanted to decouple where the settings from where its used. This way
-   it can be modified somewhere else in the code and than simply applied to
-  the graphics subsystem */
+constexpr auto SIZE(auto x) -> size_t { return static_cast<size_t>(x); }
+
+/* NOTE: The graphical settings are stored in a separate class because
+  I wanted to decouple where the settings from where its used. This way
+ it can be modified somewhere else in the code and than simply applied to
+the graphics subsystem */
 class GraphicalSettings {
 public:
   GraphicalSettings();
@@ -24,17 +34,63 @@ public:
   void acknowledge_change();
 
 private:
-
   int m_window_res[2];
   bool m_has_changed;
 };
 
+class Graphics;
+
+struct SimpleMesh {
+public:
+  enum struct Buffers { POSITION = 0, COLOR, INDEX, COUNT };
+  enum struct Attributes { POSITION, COLOR, COUNT };
+
+  void init();
+  void send_position_data(const glm::vec3 *data, size_t count);
+  void send_color_data(const glm::vec4 *data, size_t count);
+  void send_index_data(const uint16_t *data, size_t count);
+  void draw();
+
+  SimpleMesh();
+  ~SimpleMesh();
+
+private:
+  const std::array<const char *, SIZE(Attributes::COUNT)> m_attrib_names = {
+      "position", "color"};
+  std::array<GLuint, SIZE(Buffers::COUNT)> m_buffers = {0};
+  const std::array<GLuint, SIZE(Attributes::COUNT)> m_attribs = {0, 1};
+  GLuint m_vao = 0;
+  size_t m_index_count = 0;
+  ;
+};
+
+struct GPU {
+public:
+  SimpleMesh triangle_mesh;
+  SimpleMesh square_mesh;
+  SimpleMesh cube_mesh;
+
+  void init();
+  void draw();
+
+  GPU(const GPU &other) = delete;
+  GPU &operator=(const GPU &other) = delete;
+
+private:
+  explicit GPU();
+  void init_cube();
+  void init_triangle();
+  void init_square();
+  friend Graphics;
+};
+
 class Graphics {
 public:
-
   Graphics();
   Graphics(GraphicalSettings settings);
   ~Graphics();
+  Graphics(const Graphics& other) = delete;
+  Graphics& operator=(const Graphics& other) = delete;
 
   void init();
   void destroy();
@@ -42,11 +98,24 @@ public:
   GraphicalSettings get_settings() const;
   void update_settings(GraphicalSettings settings);
   bool has_settings_changed() const;
+  void init_shaders();
+  void draw();
 
 private:
   GraphicalSettings m_settings;
+  GLuint m_main_shader_id;
+  GPU m_gpu;
 };
 
+std::optional<GLuint> load_shader_from_disk(const std::string &vshader,
+                                            const std::string &fshader);
 } // namespace gfx
+
+class ShaderCompileError : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+class ShaderProgramLinkingError : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
 
 #endif // GFX_HXX

@@ -1,15 +1,17 @@
 #include "game.hxx"
 #include "utility.hxx"
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
-#include <cmath>
 
 #define DEBUG_MESSAGES
 
 const int MAIN_WINDOW_DEFAULT_HEIGHT = 768;
 const int MAIN_WINDOW_DEFAULT_WIDTH = 1024;
 const char *MAIN_WINDOW_DEFAULT_TITLE = "Rubiks";
+
+Game& Game::instance(){static Game game; return game;}
 
 void glfw_error_callback(int error, const char *desc) {
   fprintf(stderr, "GLFW Error: %s\n", desc);
@@ -84,8 +86,8 @@ void Game::init_window_system() {
     throw std::runtime_error("Could not initialise GLFW!");
   }
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   {
     GLFWwindow *mw =
@@ -149,6 +151,7 @@ void Game::update() {
     case QUIT_GAME:
       std::cout << "Quiting game!\n";
       this->stop();
+      break;
     case ROTATE_1ST_COLUMN_FORWARD:
       m_rcube.rotate_1st_column_forward();
       break;
@@ -192,8 +195,10 @@ void Game::update() {
     action_queue.pop();
   }
 
-  glClearColor(1.0f * std::sin((float)m_current_time) , 0.0, 0.5f, 1.0f * std::sin((float)m_current_time));
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClearColor(0.09f, 0.0, 0.12f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  m_gfx.draw();
 
   glfwSwapBuffers(m_main_window.get());
   glfwPollEvents();
@@ -222,53 +227,51 @@ bool Game::KeyEvent::operator<(const Game::KeyEvent &other) const {
 }
 
 void RubiksCube::rotate_1st_column_forward() {
-    std::cout << "rotate_1st_column_forward" << std::endl;
+  std::cout << "rotate_1st_column_forward" << std::endl;
 }
 
 void RubiksCube::rotate_2nd_column_forward() {
-    std::cout << "rotate_2nd_column_forward" << std::endl;
+  std::cout << "rotate_2nd_column_forward" << std::endl;
 }
 
 void RubiksCube::rotate_3rd_column_forward() {
-    std::cout << "rotate_3rd_column_forward" << std::endl;
+  std::cout << "rotate_3rd_column_forward" << std::endl;
 }
 
 void RubiksCube::rotate_1st_column_backwards() {
-    std::cout << "rotate_1st_column_backwards" << std::endl;
+  std::cout << "rotate_1st_column_backwards" << std::endl;
 }
 
 void RubiksCube::rotate_2nd_column_backwards() {
-    std::cout << "rotate_2nd_column_backwards" << std::endl;
+  std::cout << "rotate_2nd_column_backwards" << std::endl;
 }
 
 void RubiksCube::rotate_3rd_column_backwards() {
-    std::cout << "rotate_3rd_column_backwards" << std::endl;
+  std::cout << "rotate_3rd_column_backwards" << std::endl;
 }
 
 void RubiksCube::rotate_1st_row_forward() {
-    std::cout << "rotate_1st_row_forward" << std::endl;
+  std::cout << "rotate_1st_row_forward" << std::endl;
 }
 
 void RubiksCube::rotate_2nd_row_forward() {
-    std::cout << "rotate_2nd_row_forward" << std::endl;
+  std::cout << "rotate_2nd_row_forward" << std::endl;
 }
 
 void RubiksCube::rotate_3rd_row_forward() {
-    std::cout << "rotate_3rd_row_forward" << std::endl;
+  std::cout << "rotate_3rd_row_forward" << std::endl;
 }
 
 void RubiksCube::rotate_1st_row_backwards() {
-    std::cout << "rotate_1st_row_backwards" << std::endl;
+  std::cout << "rotate_1st_row_backwards" << std::endl;
 }
 
 void RubiksCube::rotate_2nd_row_backwards() {
-    std::cout << "rotate_2nd_row_backwards" << std::endl;
+  std::cout << "rotate_2nd_row_backwards" << std::endl;
 }
 
 void RubiksCube::rotate_3rd_row_backwards() {
-    std::cout << "rotate_3rd_row_backwards" << std::endl;
+  std::cout << "rotate_3rd_row_backwards" << std::endl;
 }
 
-void RubiksCube::reset() {
-    std::cout << "reset" << std::endl;
-}
+void RubiksCube::reset() { std::cout << "reset" << std::endl; }
