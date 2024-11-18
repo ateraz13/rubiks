@@ -264,6 +264,7 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data,
   glEnableVertexAttribArray(ATTRIB_ID(COLOR));
   glBindVertexArray(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data,
