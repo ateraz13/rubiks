@@ -11,6 +11,13 @@
 #define EXPR_LOG(expr)  std::clog << (#expr) << " = " << (expr) << std::endl;
 #define ITER_LOG(container) {std::clog << (#container) << " = "; ITER_LOG_INNER(container); std::cout << std::endl;}
 
+void check_gl_err() {
+  auto err = glGetError();
+  if(err != GL_NO_ERROR) {
+    std::cout << "GL error occured!";
+  }
+}
+
 void ITER_LOG_INNER(auto container) {
   std::clog << "{ ";
   auto iter = container.begin();
@@ -222,6 +229,7 @@ void gfx::SimpleMesh::init() {
   glGenVertexArrays(1, &m_vao);
   glBindVertexArray(m_vao);
   glGenBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
+  check_gl_err();
   std::cout << "m_vao = " << m_vao << std::endl;
   glBindVertexArray(0);
 

@@ -1,9 +1,10 @@
 #include "gl.hxx"
 #include <iostream>
+#include <sstream>
 
 void load_opengl_funcs(gl_loader_func proc) {
 #ifdef USE_GLAD
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    // gladLoadGLLoader((GLADloadfunc)glfwGetProcAddress);
 
     int version = gladLoadGL(proc);
     if (version == 0) {
@@ -14,8 +15,12 @@ void load_opengl_funcs(gl_loader_func proc) {
               << GLAD_VERSION_MINOR(version) << std::endl;
 #else
 
-    if(glewInit() != GLEW_OK) {
-        throw std::runtime_error("Failed to load OpenGL functions!");
+    auto err = glewInit();
+    if(err != GLEW_OK) {
+        std::stringstream ss;
+        ss << "Failed to load OpenGL functions: ";
+        ss << glewGetErrorString(err);
+        throw std::runtime_error(ss.str());
     }
 
 #endif

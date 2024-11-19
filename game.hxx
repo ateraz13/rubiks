@@ -43,6 +43,7 @@ public:
 
   static Game &instance();
 
+  void init();
   void start();
   void update();
   void stop();
@@ -70,12 +71,6 @@ private:
 
   void update_current_time();
 
-  RubiksCube m_rcube;
-  uint64_t m_last_time;
-  double m_current_time;
-  uint64_t delta_time;
-  bool m_is_running;
-
   enum Action {
     QUIT_GAME,
     ROTATE_1ST_COLUMN_FORWARD,
@@ -98,7 +93,13 @@ private:
   static void handle_inputs(GLFWwindow *win, Game::KeyboardKey key,
                             int scancode, int action, int mods);
 
-  float m_animation_speed;
+  RubiksCube m_rcube;
+  uint64_t m_last_time = 0;
+  double m_current_time = 0.0;
+  uint64_t delta_time = 0;
+  bool m_is_running = false;
+  bool m_has_initialized = false;
+  float m_animation_speed = 1.0f;
   std::shared_ptr<GLFWwindow> m_main_window;
   std::queue<Action> action_queue;
   std::map<KeyEvent, Action> m_keymap;
