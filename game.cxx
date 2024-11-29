@@ -1,6 +1,7 @@
 #include "game.hxx"
 #include "gl.hxx"
 #include "utility.hxx"
+#include <GLFW/glfw3.h>
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -50,6 +51,7 @@ void Game::handle_inputs(GLFWwindow *win, Game::KeyboardKey key, int scancode,
         "FIXME: Implement input for windows other than the main window!");
   }
 
+
 #ifdef DEBUG_MESSAGES
   std::cout << "Event received: ";
   if (key == GLFW_KEY_ESCAPE) {
@@ -75,6 +77,16 @@ void Game::handle_inputs(GLFWwindow *win, Game::KeyboardKey key, int scancode,
       game.action_queue.push(a->second);
     }
   }
+}
+
+void main_window_resized_cb(GLFWwindow *window, int width, int height) {
+  auto& inst = Game::instance();
+  inst.acknowledge_main_window_resize(width, height);
+}
+
+void Game::acknowledge_main_window_resize(int width, int height) {
+  glfwMakeContextCurrent(m_main_window.get());
+  glViewport(0, 0, width, height);
 }
 
 void Game::init_input_system() {
@@ -118,6 +130,7 @@ void Game::init_window_system() {
       }
     }
 
+    glfwSetWindowSizeCallback(mw, main_window_resized_cb);
     glfwMakeContextCurrent(mw);
 
     m_main_window = std::shared_ptr<GLFWwindow>(mw, [=](GLFWwindow *win) {
