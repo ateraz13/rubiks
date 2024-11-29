@@ -156,10 +156,18 @@ void gfx::Graphics::update_settings(GraphicalSettings settings) {
 
 gfx::GPU::GPU() : cube_mesh() {}
 
+void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                 GLsizei length, const GLchar* message, const void* userParam) {
+    std::cerr << "OpenGL Debug: " << message << std::endl;
+}
+
 void gfx::GPU::init() {
-  init_square();
+
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback(&gl_error_callback, 0);
+  // init_square();
   init_triangle();
-  init_cube();
+  // init_cube();
 }
 
 void gfx::GPU::init_square() {
@@ -205,25 +213,25 @@ void gfx::GPU::init_cube() {
 
 void gfx::Graphics::draw() {
   // EXPR_LOG(m_main_shader_id);
-  cglUseProgram(m_main_shader_id);
+  glUseProgram(m_main_shader_id);
   m_gpu.draw();
 }
 
 void gfx::GPU::draw() {
-  square_mesh.draw();
+  // square_mesh.draw();
   triangle_mesh.draw();
-  cube_mesh.draw();
+  // cube_mesh.draw();
 }
 
 gfx::SimpleMesh::SimpleMesh() : m_buffers({0}), m_attribs({0, 1}) {}
 
 void gfx::SimpleMesh::init() {
   std::cout << "Buffers::COUNT = " << SIZE(Buffers::COUNT) << std::endl;
-  cglGenVertexArrays(1, &m_vao);
-  cglBindVertexArray(m_vao);
-  cglGenBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
+  glGenVertexArrays(1, &m_vao);
+  glBindVertexArray(m_vao);
+  glGenBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
   std::cout << "m_vao = " << m_vao << std::endl;
-  cglBindVertexArray(0);
+  glBindVertexArray(0);
 
   // NOTE: We might want to use different shaders with the same data,
   // so just use static attribute locations.
@@ -233,8 +241,8 @@ void gfx::SimpleMesh::init() {
 }
 
 gfx::SimpleMesh::~SimpleMesh() {
-  cglDeleteBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
-  cglDeleteVertexArrays(1, &m_vao);
+  glDeleteBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
+  glDeleteVertexArrays(1, &m_vao);
 }
 
 #define BUFFER_ID(buffer) (this->m_buffers[SIZE(Buffers::buffer)])
@@ -242,47 +250,47 @@ gfx::SimpleMesh::~SimpleMesh() {
 
 void gfx::SimpleMesh::send_position_data(const glm::vec3 *data,
                                                size_t count) {
-  cglBindVertexArray(m_vao);
-  cglBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(POSITION));
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(POSITION));
   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * count, data,
                GL_STATIC_DRAW);
-  cglVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), nullptr);
-  cglEnableVertexAttribArray(ATTRIB_ID(POSITION));
-  cglBindVertexArray(0);
-  cglBindBuffer(GL_ARRAY_BUFFER, 0);
+  glVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), nullptr);
+  glEnableVertexAttribArray(ATTRIB_ID(POSITION));
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void gfx::SimpleMesh::send_color_data(const glm::vec4 *data,
                                             size_t count) {
-  cglBindVertexArray(m_vao);
-  cglBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(COLOR));
-  cglBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * count, data,
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(COLOR));
+  glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * count, data,
                GL_STATIC_DRAW);
   EXPR_LOG(ATTRIB_ID(COLOR));
-  cglVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), nullptr);
-  cglEnableVertexAttribArray(ATTRIB_ID(COLOR));
-  cglBindVertexArray(0);
-  cglBindBuffer(GL_ARRAY_BUFFER, 0);
-  cglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  glVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), nullptr);
+  glEnableVertexAttribArray(ATTRIB_ID(COLOR));
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data,
                                             size_t count) {
-  cglBindVertexArray(m_vao);
-  cglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BUFFER_ID(INDEX));
-  cglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BUFFER_ID(INDEX));
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
                GL_STATIC_DRAW);
   m_index_count = count;
-  cglBindVertexArray(0);
-  cglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  cglBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void gfx::SimpleMesh::draw() {
-  // glFrontFace(GL_CW);
-  cglBindVertexArray(m_vao);
-  cglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_INT, nullptr);
-  cglBindVertexArray(0);
+  glFrontFace(GL_CW);
+  glBindVertexArray(m_vao);
+  glDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_INT, nullptr);
+  glBindVertexArray(0);
 }
 
 #undef ATTRIB_ID

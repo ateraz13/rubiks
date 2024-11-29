@@ -140,7 +140,7 @@ void Game::init_window_system() {
 
     load_opengl_funcs(&glfwGetProcAddress);
 
-    // glfwSwapInterval(1);
+    glfwSwapInterval(0);
     glViewport(0, 0, MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT);
   }
 }
@@ -227,10 +227,10 @@ void Game::update() {
     action_queue.pop();
   }
 
-  glClearColor((sin(m_current_time) + 1.0f) / 2.0f, 0.0, 0.12f, 1.0f);
+  glClearColor(0.12f, 0.0, 0.12f, 1.0f);
   glClearDepth(10.0f);
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
+  glDepthFunc(GL_ALWAYS);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   m_gfx.draw();

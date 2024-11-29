@@ -6,11 +6,11 @@
 #else
 #include <GL/glew.h>
 #endif
-#include "gl_calls.hxx"
 
-#endif // GL_HXX
 
 using gl_func = void (*) (void);
 using gl_loader_func = gl_func (*)(const char* name);
 
 void load_opengl_funcs(gl_loader_func proc);
+
+#endif // GL_HXX
