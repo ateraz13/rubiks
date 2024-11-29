@@ -6,6 +6,7 @@
 #else
 #include <GL/glew.h>
 #endif
+#include "gl_calls.hxx"
 
 #endif // GL_HXX
 
