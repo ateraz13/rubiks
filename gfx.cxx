@@ -101,12 +101,14 @@ GLuint link_shader_program(Iterator begin, Iterator end) {
       "'link_shader_program' takes iterator over GLuint values.");
 
   std::array<char, 1024> log;
-  std::fill(begin(log), end(log), 0);
+  std::fill(log.begin(), log.end(), 0);
 
   GLuint shader_program = glCreateProgram();
   std::for_each(begin, end, [=](GLuint shader_id) {
     glAttachShader(shader_program, shader_id);
   });
+
+  glLinkProgram(shader_program);
 
   GLint success = GL_FALSE;
   glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
@@ -139,7 +141,7 @@ void gfx::Graphics::init_shaders() {
       compile_shader(GL_FRAGMENT_SHADER, fragment_shader_text,
                      fragment_shader_path)};
 
-  GLuint main_shader_program_id = link_shader_program(begin(shaders), end(shaders));
+  GLuint main_shader_program_id = link_shader_program(shaders.begin(), shaders.end());
 
   std::cout << "main_shader = " << main_shader_program_id << std::endl;
   this->m_main_shader_id = main_shader_program_id;
