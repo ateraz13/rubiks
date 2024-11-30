@@ -161,4 +161,21 @@ class ShaderProgramLinkingError : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
+class Shader {
+  public:
+    GLuint id() const;
+    static Shader from_file(GLuint type, const std::string& path);
+    static Shader from_source(GLuint type, const std::string& source);
+
+    void swap(Shader& rhs, Shader& lfs);
+
+    Shader(const Shader& other);
+    Shader& operator=(const Shader& other);
+    ~Shader();
+  private:
+    Shader();
+    GLuint m_id;
+    int m_ref_count;
+};
+
 #endif // GFX_HXX

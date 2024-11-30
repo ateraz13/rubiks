@@ -97,7 +97,7 @@ GLuint gfx::Graphics::compile_shader(GLenum shader_type,
   GLuint shader = glCreateShader(shader_type);
 
   if (shader == 0) {
-    throw ShaderCompileError("Failed to create shader object of type " +
+    throw ShaderCompileError(std::string("Failed to create shader object of type ") +
                              stringify_shader_type(shader_type) +
                              "(FATAL ERROR)");
   }
@@ -357,3 +357,53 @@ void gfx::SimpleMesh::draw() {
 #undef BUFFER_ID
 #undef ITER_LOG
 #undef EXPR_LOG
+
+GLuint Shader::id() const {
+  return m_id;
+}
+
+Shader::Shader():
+  m_id(0), m_ref_count(1) {}
+
+Shader Shader::from_file(GLuint type, const std::string& path) {
+  auto shader = Shader();
+
+  auto shader_text = read_text_file(path).value_or("");
+  if (shader_text.size() == 0) {
+    throw std::runtime_error(std::string("Missing of type") + stringify_shader_type(type) + "source!");
+  }
+
+  shader.m_id = gfx::Graphics::compile_shader(type, shader_text, path);
+
+  return shader;
+}
+
+Shader Shader::from_source(GLuint type, const std::string& source) {
+  auto shader = Shader();
+
+  shader.m_id = gfx::Graphics::compile_shader(type, source, "<buffer>");
+
+  return shader;
+}
+
+Shader::~Shader() {
+  m_ref_count -= 1;
+  if(m_ref_count < 0) {
+    std::cerr << "Ref count underflow in Shader class!\n";
+  }
+  if(m_ref_count == 0) {
+    glDeleteShader(m_id);
+  }
+}
+
+void Shader::swap(Shader& rhs, Shader& lhs) {
+  std::swap(rhs.m_id, lhs.m_id);
+  std::swap(rhs.m_ref_count, lhs.m_ref_count);
+}
+
+Shader::Shader(const Shader& other): m_id(other.m_id), m_ref_count(other.m_ref_count+1) {}
+Shader& Shader::operator=(const Shader& other) {
+  auto shader = Shader(other);
+  std::swap(shader, *this);
+  return *this;
+}
