@@ -1,6 +1,7 @@
 #include "gfx.hxx"
 #include "geom.hxx"
 #include "gl.hxx"
+#include "iterator.hxx"
 #include "utility.hxx"
 #include <algorithm>
 #include <array>
@@ -9,6 +10,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#include "iterator.hxx"
 
 #define EXPR_LOG(expr) std::clog << (#expr) << " = " << (expr) << std::endl;
 #define ITER_LOG(container)                                                    \
@@ -406,4 +408,45 @@ Shader& Shader::operator=(const Shader& other) {
   auto shader = Shader(other);
   std::swap(shader, *this);
   return *this;
+}
+
+GLuint ShaderProgram::id() const {
+  return m_id;
+}
+
+ShaderProgram::ShaderProgram():
+  m_id(0), m_ref_count(1) {}
+
+void ShaderProgram::swap(ShaderProgram& rhs, ShaderProgram& lhs) {
+  std::swap(rhs.m_id, lhs.m_id);
+  std::swap(rhs.m_ref_count, lhs.m_ref_count);
+}
+
+ShaderProgram::~ShaderProgram() {
+  m_ref_count -= 1;
+  if(m_ref_count < 0) {
+    std::cerr << "Ref count underflow in ShaderProgram class!\n";
+  }
+  if(m_ref_count == 0) {
+    glDeleteProgram(m_id);
+  }
+}
+
+ShaderProgram::ShaderProgram(const ShaderProgram& other): m_id(other.m_id), m_ref_count(other.m_ref_count+1) {}
+ShaderProgram& ShaderProgram::operator=(const ShaderProgram& other) {
+  auto program = ShaderProgram(other);
+  std::swap(program, *this);
+  return *this;
+}
+
+template <typename Iterator> ShaderProgram ShaderProgram::link(Iterator begin, Iterator end) {
+
+  auto program = ShaderProgram();
+  auto extract_id = [](Shader& shader) { return shader.id(); };
+  auto mapped_begin = make_mapping_iterator(begin, extract_id);
+  auto mapped_end = make_mapping_iterator(end, extract_id);
+
+  program.m_id = gfx::Graphics::link_shader_program(mapped_begin, mapped_end);
+
+  return program;
 }

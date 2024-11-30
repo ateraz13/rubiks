@@ -178,4 +178,22 @@ class Shader {
     int m_ref_count;
 };
 
+class ShaderProgram {
+  public:
+    GLuint id() const;
+
+    template<typename Iterator>
+    ShaderProgram link(Iterator begin, Iterator end);
+
+    void swap(ShaderProgram& rhs, ShaderProgram& lfs);
+
+    ShaderProgram(const ShaderProgram& other);
+    ShaderProgram& operator=(const ShaderProgram& other);
+    ~ShaderProgram();
+  private:
+    ShaderProgram();
+    GLuint m_id;
+    int m_ref_count;
+};
+
 #endif // GFX_HXX
