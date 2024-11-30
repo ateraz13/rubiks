@@ -71,10 +71,34 @@ gfx::Graphics::Graphics(GraphicalSettings settings)
   std::cout << "Creating graphics with settings!\n";
 }
 
+std::string stringify_shader_type(GLenum shader_type) {
+    switch (shader_type) {
+        case GL_VERTEX_SHADER:
+            return "GL_VERTEX_SHADER";
+        case GL_FRAGMENT_SHADER:
+            return "GL_FRAGMENT_SHADER";
+        case GL_GEOMETRY_SHADER:
+            return "GL_GEOMETRY_SHADER";
+        case GL_TESS_CONTROL_SHADER:
+            return "GL_TESS_CONTROL_SHADER";
+        case GL_TESS_EVALUATION_SHADER:
+            return "GL_TESS_EVALUATION_SHADER";
+        case GL_COMPUTE_SHADER:
+            return "GL_COMPUTE_SHADER";
+        default:
+            throw std::invalid_argument("Unknown shader type: " + std::to_string(shader_type));
+    }
+}
+
 GLuint gfx::Graphics::compile_shader(GLenum shader_type,
                                      const std::string &source,
                                      const std::string &filename) {
   GLuint shader = glCreateShader(shader_type);
+
+  if(shader == 0) {
+    throw ShaderCompileError("Failed to create shader object of type " + stringify_shader_type(shader_type) + "(FATAL ERROR)");
+  }
+
   const char *source_cstr = source.c_str();
   GLint length = static_cast<GLint>(source.size());
   glShaderSource(shader, 1, &source_cstr, &length);
@@ -104,11 +128,20 @@ GLuint link_shader_program(Iterator begin, Iterator end) {
   std::fill(log.begin(), log.end(), 0);
 
   GLuint shader_program = glCreateProgram();
+
+  if(shader_program == 0) {
+    throw ShaderProgramLinkingError("Failed to create shader program object (FATAL ERROR)");
+  }
+
   std::for_each(begin, end, [=](GLuint shader_id) {
     glAttachShader(shader_program, shader_id);
   });
 
   glLinkProgram(shader_program);
+
+  std::for_each(begin, end, [=](GLuint shader_id) {
+    glDetachShader(shader_program, shader_id);
+  });
 
   GLint success = GL_FALSE;
   glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
@@ -142,6 +175,10 @@ void gfx::Graphics::init_shaders() {
                      fragment_shader_path)};
 
   GLuint main_shader_program_id = link_shader_program(shaders.begin(), shaders.end());
+
+  for(auto shader: shaders) {
+    glDeleteShader(shader);
+  }
 
   std::cout << "main_shader = " << main_shader_program_id << std::endl;
   this->m_main_shader_id = main_shader_program_id;
