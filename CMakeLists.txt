@@ -12,7 +12,7 @@ find_package(GLEW 2.1.0 REQUIRED)
 set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
 
-set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx gl_calls.cxx)
+set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx shader.cxx)
 
 # add_definitions(USE_GLAD 1)
 if(USE_GLAD)

@@ -73,123 +73,20 @@ gfx::Graphics::Graphics(GraphicalSettings settings)
   std::cout << "Creating graphics with settings!\n";
 }
 
-std::string stringify_shader_type(GLenum shader_type) {
-  switch (shader_type) {
-  case GL_VERTEX_SHADER:
-    return "GL_VERTEX_SHADER";
-  case GL_FRAGMENT_SHADER:
-    return "GL_FRAGMENT_SHADER";
-  case GL_GEOMETRY_SHADER:
-    return "GL_GEOMETRY_SHADER";
-  case GL_TESS_CONTROL_SHADER:
-    return "GL_TESS_CONTROL_SHADER";
-  case GL_TESS_EVALUATION_SHADER:
-    return "GL_TESS_EVALUATION_SHADER";
-  case GL_COMPUTE_SHADER:
-    return "GL_COMPUTE_SHADER";
-  default:
-    throw std::invalid_argument("Unknown shader type: " +
-                                std::to_string(shader_type));
-  }
-}
 
-GLuint gfx::Graphics::compile_shader(GLenum shader_type,
-                                     const std::string &source,
-                                     const std::string &filename) {
-  GLuint shader = glCreateShader(shader_type);
-
-  if (shader == 0) {
-    throw ShaderCompileError(std::string("Failed to create shader object of type ") +
-                             stringify_shader_type(shader_type) +
-                             "(FATAL ERROR)");
-  }
-
-  const char *source_cstr = source.c_str();
-  GLint length = static_cast<GLint>(source.size());
-  glShaderSource(shader, 1, &source_cstr, &length);
-  glCompileShader(shader);
-
-  // Check compilation status
-  GLint success = GL_FALSE;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    std::array<char, 1024> log;
-    std::fill(begin(log), end(log), 0);
-    glGetShaderInfoLog(shader, log.size(), NULL, &log[0]);
-    throw ShaderCompileError(filename + ": " + &log[0]);
-  }
-
-  return shader;
-}
-
-template <typename Iterator>
-GLuint gfx::Graphics::link_shader_program(Iterator begin, Iterator end) {
-  static_assert(
-      std::is_same_v<typename std::iterator_traits<Iterator>::value_type,
-                     GLuint>,
-      "'link_shader_program' takes iterator over GLuint values.");
-
-  std::array<char, 1024> log;
-  std::fill(log.begin(), log.end(), 0);
-
-  GLuint shader_program = glCreateProgram();
-
-  if (shader_program == 0) {
-    throw ShaderProgramLinkingError(
-        "Failed to create shader program object (FATAL ERROR)");
-  }
-
-  std::for_each(begin, end, [=](GLuint shader_id) {
-    glAttachShader(shader_program, shader_id);
-  });
-
-  glLinkProgram(shader_program);
-
-  std::for_each(begin, end, [=](GLuint shader_id) {
-    glDetachShader(shader_program, shader_id);
-  });
-
-  GLint success = GL_FALSE;
-  glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-
-  if (!success) {
-    glGetProgramInfoLog(shader_program, 1024, NULL, &log[0]);
-    throw ShaderProgramLinkingError(&log[0]);
-  }
-
-  return shader_program;
-}
 
 void gfx::Graphics::init_shaders() {
   auto vertex_shader_path = "./shaders/simple.vertex.glsl";
   auto fragment_shader_path = "./shaders/simple.fragment.glsl";
-  auto vertex_shader_text = read_text_file(vertex_shader_path).value_or("");
-  if (vertex_shader_text.size() == 0) {
-    throw std::runtime_error("Missing vertex shader source!");
-  }
 
-  auto fragment_shader_text = read_text_file(fragment_shader_path).value_or("");
-  if (fragment_shader_text.size() == 0) {
-    throw std::runtime_error("Missing fragment shader source!");
-  }
+  std::vector<Shader> shaders = {
+      Shader::from_file(GL_VERTEX_SHADER, vertex_shader_path),
+      Shader::from_file(GL_FRAGMENT_SHADER, fragment_shader_path)};
 
-  std::cout << "Vertex Shader = " << vertex_shader_text << std::endl;
+  auto main_shader_program = ShaderProgram::link(shaders.begin(), shaders.end());
 
-  std::array<GLuint, 2> shaders = {
-      compile_shader(GL_VERTEX_SHADER, vertex_shader_text, vertex_shader_path),
-      compile_shader(GL_FRAGMENT_SHADER, fragment_shader_text,
-                     fragment_shader_path)};
-
-  GLuint main_shader_program_id =
-      link_shader_program(shaders.begin(), shaders.end());
-
-  for (auto shader : shaders) {
-    glDeleteShader(shader);
-  }
-
-  std::cout << "main_shader = " << main_shader_program_id << std::endl;
-  this->m_main_shader_id = main_shader_program_id;
-  std::cout << "m_main_shader = " << this->m_main_shader_id << std::endl;
+  std::cout << "main_shader = " << main_shader_program.id() << std::endl;
+  this->m_main_shader = main_shader_program;
 }
 
 gfx::Graphics::~Graphics() {
@@ -278,8 +175,8 @@ void gfx::GPU::init_cube() {
 }
 
 void gfx::Graphics::draw() {
-  // EXPR_LOG(m_main_shader_id);
-  glUseProgram(m_main_shader_id);
+  // EXPR_LOG(m_main_shader->id());
+  glUseProgram(m_main_shader->id());
   m_gpu.draw();
 }
 
@@ -360,93 +257,3 @@ void gfx::SimpleMesh::draw() {
 #undef ITER_LOG
 #undef EXPR_LOG
 
-GLuint Shader::id() const {
-  return m_id;
-}
-
-Shader::Shader():
-  m_id(0), m_ref_count(1) {}
-
-Shader Shader::from_file(GLuint type, const std::string& path) {
-  auto shader = Shader();
-
-  auto shader_text = read_text_file(path).value_or("");
-  if (shader_text.size() == 0) {
-    throw std::runtime_error(std::string("Missing of type") + stringify_shader_type(type) + "source!");
-  }
-
-  shader.m_id = gfx::Graphics::compile_shader(type, shader_text, path);
-
-  return shader;
-}
-
-Shader Shader::from_source(GLuint type, const std::string& source) {
-  auto shader = Shader();
-
-  shader.m_id = gfx::Graphics::compile_shader(type, source, "<buffer>");
-
-  return shader;
-}
-
-Shader::~Shader() {
-  m_ref_count -= 1;
-  if(m_ref_count < 0) {
-    std::cerr << "Ref count underflow in Shader class!\n";
-  }
-  if(m_ref_count == 0) {
-    glDeleteShader(m_id);
-  }
-}
-
-void Shader::swap(Shader& rhs, Shader& lhs) {
-  std::swap(rhs.m_id, lhs.m_id);
-  std::swap(rhs.m_ref_count, lhs.m_ref_count);
-}
-
-Shader::Shader(const Shader& other): m_id(other.m_id), m_ref_count(other.m_ref_count+1) {}
-Shader& Shader::operator=(const Shader& other) {
-  auto shader = Shader(other);
-  std::swap(shader, *this);
-  return *this;
-}
-
-GLuint ShaderProgram::id() const {
-  return m_id;
-}
-
-ShaderProgram::ShaderProgram():
-  m_id(0), m_ref_count(1) {}
-
-void ShaderProgram::swap(ShaderProgram& rhs, ShaderProgram& lhs) {
-  std::swap(rhs.m_id, lhs.m_id);
-  std::swap(rhs.m_ref_count, lhs.m_ref_count);
-}
-
-ShaderProgram::~ShaderProgram() {
-  m_ref_count -= 1;
-  if(m_ref_count < 0) {
-    std::cerr << "Ref count underflow in ShaderProgram class!\n";
-  }
-  if(m_ref_count == 0) {
-    glDeleteProgram(m_id);
-  }
-}
-
-ShaderProgram::ShaderProgram(const ShaderProgram& other): m_id(other.m_id), m_ref_count(other.m_ref_count+1) {}
-ShaderProgram& ShaderProgram::operator=(const ShaderProgram& other) {
-  auto program = ShaderProgram(other);
-  std::swap(program, *this);
-  return *this;
-}
-
-template <typename Iterator> ShaderProgram ShaderProgram::link(Iterator begin, Iterator end) {
-
-  auto program = ShaderProgram();
-  auto extract_id = [](Shader& shader) { return shader.id(); };
-  auto mapped_begin = make_mapping_iterator(begin, extract_id);
-  auto mapped_end = make_mapping_iterator(end, extract_id);
-
-  program.m_id = gfx::Graphics::link_shader_program(mapped_begin, mapped_end);
-
-  return program;
-}
