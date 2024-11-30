@@ -1,7 +1,7 @@
 #version 450
 
-in vec3 frag_pos;
-in vec4 frag_color;
+layout(location=10) in vec4 frag_pos;
+layout(location=11) in vec4 frag_color;
 
 layout(location = 0) out vec4 final_frag_color;
 

@@ -1,6 +1,8 @@
 #include "gfx.hxx"
 #include "geom.hxx"
+#include "gl.hxx"
 #include "utility.hxx"
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <iostream>
@@ -8,18 +10,23 @@
 #include <stdexcept>
 #include <utility>
 
-#define EXPR_LOG(expr)  std::clog << (#expr) << " = " << (expr) << std::endl;
-#define ITER_LOG(container) {std::clog << (#container) << " = "; ITER_LOG_INNER(container); std::cout << std::endl;}
+#define EXPR_LOG(expr) std::clog << (#expr) << " = " << (expr) << std::endl;
+#define ITER_LOG(container)                                                    \
+  {                                                                            \
+    std::clog << (#container) << " = ";                                        \
+    ITER_LOG_INNER(container);                                                 \
+    std::cout << std::endl;                                                    \
+  }
 
 void ITER_LOG_INNER(auto container) {
   std::clog << "{ ";
   auto iter = container.begin();
-  if(iter!=container.end()) {
+  if (iter != container.end()) {
     std::clog << *iter;
     iter++;
   }
-  for(; iter != container.end(); iter++) {
-    std::clog << ", " << *iter ;
+  for (; iter != container.end(); iter++) {
+    std::clog << ", " << *iter;
   }
   std::clog << " }";
 }
@@ -64,6 +71,54 @@ gfx::Graphics::Graphics(GraphicalSettings settings)
   std::cout << "Creating graphics with settings!\n";
 }
 
+GLuint gfx::Graphics::compile_shader(GLenum shader_type,
+                                     const std::string &source,
+                                     const std::string &filename) {
+  GLuint shader = glCreateShader(shader_type);
+  const char *source_cstr = source.c_str();
+  GLint length = static_cast<GLint>(source.size());
+  glShaderSource(shader, 1, &source_cstr, &length);
+  glCompileShader(shader);
+
+  // Check compilation status
+  GLint success = GL_FALSE;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    std::array<char, 1024> log;
+    std::fill(begin(log), end(log), 0);
+    glGetShaderInfoLog(shader, log.size(), NULL, &log[0]);
+    throw ShaderCompileError(filename + ": " + &log[0]);
+  }
+
+  return shader;
+}
+
+template <typename Iterator>
+GLuint link_shader_program(Iterator begin, Iterator end) {
+  static_assert(
+      std::is_same_v<typename std::iterator_traits<Iterator>::value_type,
+                     GLuint>,
+      "'link_shader_program' takes iterator over GLuint values.");
+
+  std::array<char, 1024> log;
+  std::fill(begin(log), end(log), 0);
+
+  GLuint shader_program = glCreateProgram();
+  std::for_each(begin, end, [=](GLuint shader_id) {
+    glAttachShader(shader_program, shader_id);
+  });
+
+  GLint success = GL_FALSE;
+  glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+
+  if (!success) {
+    glGetProgramInfoLog(shader_program, 1024, NULL, &log[0]);
+    throw ShaderProgramLinkingError(&log[0]);
+  }
+
+  return shader_program;
+}
+
 void gfx::Graphics::init_shaders() {
   auto vertex_shader_path = "./shaders/simple.vertex.glsl";
   auto fragment_shader_path = "./shaders/simple.fragment.glsl";
@@ -79,54 +134,12 @@ void gfx::Graphics::init_shaders() {
 
   std::cout << "Vertex Shader = " << vertex_shader_text << std::endl;
 
-  const char *shaders[] = {vertex_shader_text.c_str(),
-                           fragment_shader_text.c_str()};
+  std::array<GLuint, 2> shaders = {
+      compile_shader(GL_VERTEX_SHADER, vertex_shader_text, vertex_shader_path),
+      compile_shader(GL_FRAGMENT_SHADER, fragment_shader_text,
+                     fragment_shader_path)};
 
-  std::array<char, 1024> log_buf;
-  auto check_shader = [&](const std::string &fn, GLuint shader) {
-    std::stringstream ss;
-    std::fill(begin(log_buf), end(log_buf), 0);
-
-    GLint success = GL_FALSE;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-      glGetShaderInfoLog(shader, 1024, NULL, &log_buf[0]);
-      ss << "\n" << fn << ":" << &log_buf[0];
-      throw ShaderCompileError(ss.str());
-    }
-  };
-
-  auto check_shader_program = [&](GLuint program) {
-    std::fill(begin(log_buf), end(log_buf), 0);
-
-    GLint success = GL_FALSE;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-
-    if (!success) {
-      glGetProgramInfoLog(program, 1024, NULL, &log_buf[0]);
-      throw ShaderProgramLinkingError(&log_buf[0]);
-    }
-  };
-
-  const GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertex_shader_id, 1, &shaders[0], NULL);
-  glCompileShader(vertex_shader_id);
-
-  check_shader(vertex_shader_path, vertex_shader_id);
-
-  const GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragment_shader_id, 1, &shaders[1], NULL);
-  glCompileShader(fragment_shader_id);
-
-  check_shader(fragment_shader_path, fragment_shader_id);
-
-  const GLuint main_shader_program_id = glCreateProgram();
-  glAttachShader(main_shader_program_id, vertex_shader_id);
-  glAttachShader(main_shader_program_id, fragment_shader_id);
-  glLinkProgram(main_shader_program_id);
-
-  check_shader_program(main_shader_program_id);
+  GLuint main_shader_program_id = link_shader_program(begin(shaders), end(shaders));
 
   std::cout << "main_shader = " << main_shader_program_id << std::endl;
   this->m_main_shader_id = main_shader_program_id;
@@ -156,9 +169,16 @@ void gfx::Graphics::update_settings(GraphicalSettings settings) {
 
 gfx::GPU::GPU() : cube_mesh() {}
 
-void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                                 GLsizei length, const GLchar* message, const void* userParam) {
-    std::cerr << "OpenGL Debug: " << message << std::endl;
+void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id,
+                                  GLenum severity, GLsizei length,
+                                  const GLchar *message,
+                                  const void *userParam) {
+  std::cerr << "OpenGL Debug Message:\n"
+            << "\tSource: " << source << "\n"
+            << "\tType: " << type << "\n"
+            << "\tID: " << id << "\n"
+            << "\tSeverity: " << severity << "\n"
+            << "\tMessage: " << message << std::endl;
 }
 
 void gfx::GPU::init() {
@@ -248,46 +268,42 @@ gfx::SimpleMesh::~SimpleMesh() {
 #define BUFFER_ID(buffer) (this->m_buffers[SIZE(Buffers::buffer)])
 #define ATTRIB_ID(attrib) (this->m_attribs[SIZE(Attributes::attrib)])
 
-void gfx::SimpleMesh::send_position_data(const glm::vec3 *data,
-                                               size_t count) {
+void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
   glBindVertexArray(m_vao);
   glBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(POSITION));
   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * count, data,
                GL_STATIC_DRAW);
-  glVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), nullptr);
+  EXPR_LOG(BUFFER_ID(POSITION));
+  glVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE,
+                        sizeof(glm::vec3), nullptr);
   glEnableVertexAttribArray(ATTRIB_ID(POSITION));
+  EXPR_LOG(ATTRIB_ID(POSITION));
   glBindVertexArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void gfx::SimpleMesh::send_color_data(const glm::vec4 *data,
-                                            size_t count) {
+void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
   glBindVertexArray(m_vao);
   glBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(COLOR));
   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * count, data,
                GL_STATIC_DRAW);
   EXPR_LOG(ATTRIB_ID(COLOR));
-  glVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), nullptr);
+  glVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE,
+                        sizeof(glm::vec4), nullptr);
   glEnableVertexAttribArray(ATTRIB_ID(COLOR));
   glBindVertexArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void gfx::SimpleMesh::send_index_data(const uint16_t *data,
-                                            size_t count) {
+void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
   glBindVertexArray(m_vao);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BUFFER_ID(INDEX));
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
                GL_STATIC_DRAW);
   m_index_count = count;
   glBindVertexArray(0);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void gfx::SimpleMesh::draw() {
-  glFrontFace(GL_CW);
+  glFrontFace(GL_CCW);
   glBindVertexArray(m_vao);
   glDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);

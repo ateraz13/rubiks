@@ -98,6 +98,7 @@ public:
   GraphicalSettings get_settings() const;
   void update_settings(GraphicalSettings settings);
   bool has_settings_changed() const;
+  GLuint compile_shader(GLenum shader_type, const std::string& source, const std::string& filename);
   void init_shaders();
   void draw();
 
