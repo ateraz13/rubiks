@@ -31,7 +31,7 @@ Shader Shader::from_file(GLuint type, const std::string &path) {
 
   auto shader_text = read_text_file(path).value_or("");
   if (shader_text.size() == 0) {
-    throw std::runtime_error(std::string("Missing of type") +
+    throw std::runtime_error(std::string("Missing shader source code of type ") +
                              stringify_shader_type(type) + "source!");
   }
 

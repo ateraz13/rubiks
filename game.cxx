@@ -1,4 +1,5 @@
 #include "game.hxx"
+#include "except.hxx"
 #include "gl.hxx"
 #include "utility.hxx"
 #include <GLFW/glfw3.h>
@@ -47,10 +48,10 @@ void Game::handle_inputs(GLFWwindow *win, Game::KeyboardKey key, int scancode,
   auto &game = Game::instance();
 
   if (win != game.m_main_window.get()) {
-    throw std::runtime_error(
+    throw NotImplemented(
+        "Support for multiple windows is not implemted\n"
         "FIXME: Implement input for windows other than the main window!");
   }
-
 
 #ifdef DEBUG_MESSAGES
   std::cout << "Event received: ";
@@ -80,7 +81,7 @@ void Game::handle_inputs(GLFWwindow *win, Game::KeyboardKey key, int scancode,
 }
 
 void main_window_resized_cb(GLFWwindow *window, int width, int height) {
-  auto& inst = Game::instance();
+  auto &inst = Game::instance();
   inst.acknowledge_main_window_resize(width, height);
 }
 
@@ -113,7 +114,7 @@ void Game::init_window_system() {
   }
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   {
     GLFWwindow *mw =
@@ -147,6 +148,7 @@ void Game::init_window_system() {
 
 void Game::save(const std::string &name) {
   // TODO: Save the game
+  throw NotImplemented("Save functionality is not implemented!\n");
 }
 
 void Game::update_current_time() {
