@@ -30,10 +30,10 @@ Game::Game()
 
 void Game::init() {
   if (!m_has_initialized) {
+    m_has_initialized = true;
     init_window_system();
     init_input_system();
     m_gfx.init();
-    m_has_initialized = true;
   }
 }
 
