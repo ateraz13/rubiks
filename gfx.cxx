@@ -202,7 +202,7 @@ gfx::SimpleMesh::SimpleMesh() {}
 void gfx::SimpleMesh::init() {
   std::cout << "Buffers::COUNT = " << SIZE(Buffers::COUNT) << std::endl;
   dglGenVertexArrays(1, &m_vao);
-  // glBindVertexArray(m_vao);
+  glBindVertexArray(m_vao);
   dglGenBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
   dglBindVertexArray(0);
 }
@@ -232,7 +232,7 @@ void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
   dglEnableVertexAttribArray(ATTRIB_ID(POSITION));
   EXPR_LOG(ATTRIB_ID(POSITION));
 
-  // glBindVertexArray(0);
+  glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
@@ -244,7 +244,7 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
   dglVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE,
                         0, nullptr);
   dglEnableVertexAttribArray(ATTRIB_ID(COLOR));
-  // glBindVertexArray(0);
+  glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
@@ -253,12 +253,12 @@ void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
   dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
                GL_STATIC_DRAW);
   m_index_count = count;
-  // glBindVertexArray(0);
+  glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
-  dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
+  dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, (void*) 0);
   dglBindVertexArray(0);
 }
 
