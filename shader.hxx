@@ -38,6 +38,7 @@ private:
 class ShaderProgram {
 public:
   GLuint id() const;
+  void use() const;
 
   template <typename Iterator>
   static ShaderProgram link(Iterator begin, Iterator end);

@@ -141,3 +141,10 @@ GLuint compile_shader(GLenum shader_type, const std::string &source,
 
   return shader;
 }
+
+void ShaderProgram::use() const {
+    if(m_id == 0) {
+        throw std::runtime_error("Tried to use invalid shader program!\n");
+    }
+    glUseProgram(m_id);
+}
