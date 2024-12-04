@@ -4,6 +4,7 @@
 #include "shader.hxx"
 #include <array>
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
 #include <optional>
@@ -47,8 +48,10 @@ struct SimpleMesh {
 public:
   enum struct Buffers { POSITION = 0, COLOR, INDEX, COUNT };
   enum struct Attributes { POSITION, COLOR, COUNT };
+  enum struct Uniforms { MVP, COUNT };
 
   void init();
+  void send_mvp(const glm::mat4& mvp);
   void send_position_data(const glm::vec3 *data, size_t count);
   void send_color_data(const glm::vec4 *data, size_t count);
   void send_index_data(const uint16_t *data, size_t count);
@@ -62,6 +65,8 @@ private:
       "position", "color"};
   std::array<GLuint, SIZE(Buffers::COUNT)> m_buffers = {0};
   const std::array<GLuint, SIZE(Attributes::COUNT)> m_attribs = {0, 1};
+
+  const std::array<GLuint, SIZE(Uniforms::COUNT)> m_uniforms = {25};
   GLuint m_vao = 0;
   size_t m_index_count = 0;
   ;
