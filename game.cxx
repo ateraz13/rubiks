@@ -39,7 +39,7 @@ void Game::init() {
 
 Game::~Game() {
   std::clog << "Destroying game!\n";
-  save("before_exit_autosave");
+  // save("before_exit_autosave");
 }
 
 void Game::handle_inputs(GLFWwindow *win, Game::KeyboardKey key, int scancode,
@@ -86,6 +86,7 @@ void main_window_resized_cb(GLFWwindow *window, int width, int height) {
 }
 
 void Game::acknowledge_main_window_resize(int width, int height) {
+  std::cout << "Window resized: width = " << width << ", height = " << height << "\n";
   glfwMakeContextCurrent(m_main_window.get());
   glViewport(0, 0, width, height);
 }
