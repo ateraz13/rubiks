@@ -41,7 +41,7 @@ cat <<EOM
 // General GL_Call template
 template <typename GL_Func, typename... Args>
 static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const char* source_file, int line_num, const char* func_name, Args... args) {
-   std::cout << "gl_call: " << func_name << "(";
+   std::cout << source_file << ":" << line_num << ": " << func_name << "(";
    dbg_gl_print_args(args...);
    std::cout << ")\n";
    DBG_GL_PRE_CALLBACK(source_file, line_num, func_name);
@@ -57,7 +57,7 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
    }
 }
 EOM
-awk "match(\$0, /\s+(gl[^(]+)\([^)]*\)/, names){ print names[1] }" "$input_files" | grep -v glfw | grep -v glew | sort | uniq |
+awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }" "$input_files" | grep -v glfw | grep -v glew | sort | uniq |
 while read -r func_name ; do
     echo "#define d$func_name(args...) \\"
     echo "  dbg_gl_call($func_name, __FILE__, __LINE__, \"$func_name\", args)"
