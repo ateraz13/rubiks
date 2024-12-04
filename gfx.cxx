@@ -258,7 +258,7 @@ void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
 
 void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
-  dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_INT, nullptr);
+  dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
   dglBindVertexArray(0);
 }
 
