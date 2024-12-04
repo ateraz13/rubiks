@@ -37,6 +37,7 @@ private:
   std::array<CellID, 9 * 3> m_cells;
 };
 
+// FIXME: This Game class should be thread safe, it is not at the moment.
 class Game {
 public:
   ~Game();
