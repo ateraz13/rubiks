@@ -25,7 +25,7 @@ echo " "
 echo "template<typename Arg, typename... Rest>"
 echo "void dbg_gl_print_args_internal(Arg arg, Rest... rest) {"
 echo "   std::cout << \", \" << arg;"
-echo "   print_args_internal(rest...);"
+echo "   dbg_gl_print_args_internal(rest...);"
 echo "}"
 echo " "
 echo "void dbg_gl_print_args() {}"
@@ -36,43 +36,30 @@ echo "   std::cout <<  arg;"
 echo "   dbg_gl_print_args_internal(rest...);"
 echo "}"
 echo " "
-echo "template<typename GL_Func, typename ReturnType = void>"
-echo "struct GL_Call {"
-echo "};"
-echo " "
 # void return value calls
-echo "template<typename GL_Func>"
-echo "struct GL_Call<GL_Func, std::enable_if_t<std::is_same_v<std::invoke_result_t<GL_Func>, void>>> {"
-echo " template<typename... Args> "
-echo " static void execute(GL_Func gl_func, const char* source_file, int line_num, const char* func_name, Args... args) { "
-echo "    std::cout << \"gl_call: \" << func_name << \"(\";"
-echo "    dbg_gl_print_args(args...);"
-echo "    std::cout << \")\";"
-echo "    DBG_GL_PRE_CALLBACK(source_file, line_num, func_name);"
-echo "    gl_func(args...);"
-echo "    DBG_GL_POST_CALLBACK(source_file, line_num, func_name);"
-echo " }"
-echo "};"
-echo " "
-# Non void return value calls
-echo "template<typename GL_Func>"
-echo "struct GL_Call<GL_Func, std::enable_if_t<!std::is_same_v<std::invoke_result_t<GL_Func>, void>>> {"
-echo " template<typename... Args> "
-echo " static void execute(GL_Func gl_func, const char* source_file, int line_num, const char* func_name, Args... args) { "
-echo "    std::cout << \"gl_call: \" << func_name << \"(\";"
-echo "    dbg_gl_print_args(args...);"
-echo "    std::cout << \")\";"
-echo "    DBG_GL_PRE_CALLBACK(source_file, line_num, func_name);"
-echo "    auto ret = gl_func(args...);"
-echo "    std::cout << \"gl_call_return: \" << ret << \"\n\" ;"
-echo "    DBG_GL_POST_CALLBACK(source_file, line_num, func_name);"
-echo "    return ret;"
-echo " }"
-echo "};"
-echo " "
+cat <<EOM
+// General GL_Call template
+template <typename GL_Func, typename... Args>
+static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const char* source_file, int line_num, const char* func_name, Args... args) {
+   std::cout << "gl_call: " << func_name << "(";
+   dbg_gl_print_args(args...);
+   std::cout << ")\n";
+   DBG_GL_PRE_CALLBACK(source_file, line_num, func_name);
+
+   if constexpr (std::is_same_v<std::invoke_result_t<GL_Func, Args...>, void>) {
+       gl_func(args...); // No return value
+       DBG_GL_POST_CALLBACK(source_file, line_num, func_name);
+   } else {
+       auto ret = gl_func(args...); // Capture return value
+       DBG_GL_POST_CALLBACK(source_file, line_num, func_name);
+       std::cout << "gl_call_return: " << ret << "\n";
+       return ret;
+   }
+}
+EOM
 awk "match(\$0, /\s+(gl[^(]+)\([^)]*\)/, names){ print names[1] }" "$input_files" | grep -v glfw | grep -v glew | sort | uniq |
 while read -r func_name ; do
     echo "#define d$func_name(args...) \\"
-    echo "  GL_Call<decltype($func_name)>::execute($func_name, __FILE__, __LINE__, \"$func_name\", args)"
+    echo "  dbg_gl_call($func_name, __FILE__, __LINE__, \"$func_name\", args)"
 done
 echo "#endif //GL_CALLS_HXX"
