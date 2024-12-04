@@ -228,7 +228,7 @@ void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
                GL_STATIC_DRAW);
   EXPR_LOG(BUFFER_ID(POSITION));
   dglVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE,
-                        sizeof(glm::vec3), nullptr);
+                        0, nullptr);
   dglEnableVertexAttribArray(ATTRIB_ID(POSITION));
   EXPR_LOG(ATTRIB_ID(POSITION));
 
@@ -242,7 +242,7 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
                GL_STATIC_DRAW);
   EXPR_LOG(ATTRIB_ID(COLOR));
   dglVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE,
-                        sizeof(glm::vec4), nullptr);
+                        0, nullptr);
   dglEnableVertexAttribArray(ATTRIB_ID(COLOR));
   // glBindVertexArray(0);
 }
