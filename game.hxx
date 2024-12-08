@@ -102,7 +102,7 @@ private:
   bool m_is_running = false;
   bool m_has_initialized = false;
   float m_animation_speed = 1.0f;
-  GLFWwindow* m_main_window;
+  std::shared_ptr<GLFWwindow> m_main_window;
   std::queue<Action> action_queue;
   std::map<KeyEvent, Action> m_keymap;
   gfx::Graphics m_gfx;
