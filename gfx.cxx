@@ -18,7 +18,6 @@ void precall_callback(const char *source_file, int line_num,
 void postcall_callback(const char *source_file, int line_num,
                        const char *func_name) {}
 
-
 void ITER_LOG_INNER(auto container) {
   std::clog << "{ ";
   auto iter = container.begin();
@@ -189,54 +188,48 @@ void gfx::GPU::draw() {
 gfx::SimpleMesh::SimpleMesh() {}
 
 void gfx::SimpleMesh::init() {
-  std::cout << "Buffers::COUNT = " << SIZE(Buffers::COUNT) << std::endl;
+  std::cout << "Buffers::COUNT = " << SIZE(BufferType::COUNT) << std::endl;
   dglGenVertexArrays(1, &m_vao);
   glBindVertexArray(m_vao);
-  dglGenBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
+  dglGenBuffers(SIZE(BufferType::COUNT), &m_buffers[0]);
   dglBindVertexArray(0);
 }
 
-#define BUFFER_ID(buffer) (this->m_buffers[SIZE(Buffers::buffer)])
-#define ATTRIB_ID(attrib) (this->m_attribs[SIZE(Attributes::attrib)])
-#define UNIFORM_ID(unif) (this->m_uniforms[SIZE(Uniforms::unif)])
-
 void gfx::SimpleMesh::send_mvp(const glm::mat4 &mat) {
-  glUniformMatrix4fv(UNIFORM_ID(MVP), 1, GL_FALSE, &mat[0][0]);
+  glUniformMatrix4fv(uniform_id(UniformType::MVP), 1, GL_FALSE, &mat[0][0]);
 }
 
 gfx::SimpleMesh::~SimpleMesh() {
-  dglDeleteBuffers(SIZE(Buffers::COUNT), &m_buffers[0]);
+  dglDeleteBuffers(SIZE(BufferType::COUNT), &m_buffers[0]);
   dglDeleteVertexArrays(1, &m_vao);
 }
 
 void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
+  dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
+  dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
   dglBindVertexArray(m_vao);
-  dglBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(POSITION));
-  dglBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * count, data,
-                GL_STATIC_DRAW);
-  EXPR_LOG(BUFFER_ID(POSITION));
-  dglVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE, 0,
+  dglEnableVertexAttribArray(attrib_id(AttribType::POSITION));
+  EXPR_LOG(buffer_id(BufferType::POSITION));
+  dglVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE, 0,
                          nullptr);
-  dglEnableVertexAttribArray(ATTRIB_ID(POSITION));
-  EXPR_LOG(ATTRIB_ID(POSITION));
+  EXPR_LOG(attrib_id(AttribType::POSITION));
 
   glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
+  dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::COLOR));
+  dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
   dglBindVertexArray(m_vao);
-  dglBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(COLOR));
-  dglBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * count, data,
-                GL_STATIC_DRAW);
-  EXPR_LOG(ATTRIB_ID(COLOR));
-  dglVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE, 0, nullptr);
-  dglEnableVertexAttribArray(ATTRIB_ID(COLOR));
+  EXPR_LOG(attrib_id(AttribType::COLOR));
+  dglEnableVertexAttribArray(attrib_id(AttribType::COLOR));
+  dglVertexAttribPointer(attrib_id(AttribType::COLOR), 4, GL_FLOAT, GL_FALSE, 0, nullptr);
   glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
   dglBindVertexArray(m_vao);
-  dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BUFFER_ID(INDEX));
+  dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
   dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
                 GL_STATIC_DRAW);
   m_index_count = count;
@@ -245,11 +238,13 @@ void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
 
 void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
+  dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
   dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
   dglBindVertexArray(0);
 }
 
-#undef ATTRIB_ID
-#undef BUFFER_ID
-#undef ITER_LOG
-#undef EXPR_LOG
+GLuint gfx::SimpleMesh::buffer_id(BufferType buffer) { return m_buffers[SIZE(buffer)]; }
+
+GLuint gfx::SimpleMesh::attrib_id(AttribType attrib) { return m_attribs[SIZE(attrib)]; }
+
+GLuint gfx::SimpleMesh::uniform_id(UniformType uniform) { return m_uniforms[SIZE(uniform)]; }

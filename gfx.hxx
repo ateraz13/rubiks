@@ -44,9 +44,9 @@ class Graphics;
 
 struct SimpleMesh {
 public:
-  enum struct Buffers { POSITION = 0, COLOR, INDEX, COUNT };
-  enum struct Attributes { POSITION, COLOR, COUNT };
-  enum struct Uniforms { MVP, COUNT };
+  enum struct BufferType { POSITION = 0, COLOR, INDEX, COUNT };
+  enum struct AttribType { POSITION, COLOR, COUNT };
+  enum struct UniformType { MVP, COUNT };
 
   void init();
   void send_mvp(const glm::mat4 &mvp);
@@ -57,13 +57,17 @@ public:
   SimpleMesh();
   ~SimpleMesh();
 
-private:
-  const std::array<const char *, SIZE(Attributes::COUNT)> m_attrib_names = {
-      "position", "color"};
-  std::array<GLuint, SIZE(Buffers::COUNT)> m_buffers = {0};
-  const std::array<GLuint, SIZE(Attributes::COUNT)> m_attribs = {0, 1};
+  GLuint buffer_id(BufferType buffer);
+  GLuint attrib_id(AttribType attrib);
+  GLuint uniform_id(UniformType uniform);
 
-  const std::array<GLuint, SIZE(Uniforms::COUNT)> m_uniforms = {25};
+private:
+  const std::array<const char *, SIZE(AttribType::COUNT)> m_attrib_names = {
+      "position", "color"};
+  std::array<GLuint, SIZE(BufferType::COUNT)> m_buffers = {0};
+  const std::array<GLuint, SIZE(AttribType::COUNT)> m_attribs = {0, 1};
+
+  const std::array<GLuint, SIZE(UniformType::COUNT)> m_uniforms = {25};
   GLuint m_vao = 0;
   size_t m_index_count = 0;
   ;
