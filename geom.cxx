@@ -3,7 +3,7 @@
 
 namespace geom {
 
-const std::array<glm::vec3, 4> square_vertices {{
+const std::array<glm::vec3, 4> square_vertices{{
     {0.5f, 0.5f, 0.0f},   // top right
     {0.5f, -0.5f, 0.0f},  // bottom right
     {-0.5f, -0.5f, 0.0f}, // bottom left
@@ -17,11 +17,8 @@ const std::array<uint16_t, 6> square_indices = {{
 const std::array<glm::vec3, 4> square_normals = {
     {{0.0, 0.0, 1.0f}, {0.0, 0.0, 1.0f}, {0.0, 0.0, 1.0f}, {0.0, 0.0, 1.0f}}};
 
-const std::array<glm::vec3, 3> triangle_vertices = {{
-{0.0f, 0.5f, 0.0f},
-{-0.5f, -0.5f, 0.0f},
-{0.5f, -0.5f, 0.0f}
-}};
+const std::array<glm::vec3, 3> triangle_vertices = {
+    {{0.0f, 0.5f, 0.0f}, {-0.5f, -0.5f, 0.0f}, {0.5f, -0.5f, 0.0f}}};
 
 const std::array<uint16_t, 3> triangle_indices = {{0, 1, 2}};
 
@@ -64,4 +61,4 @@ const std::array<glm::vec3, 6> cube_normals = {{
     glm::vec3(1, 0, 0)   // Right face
 }};
 
-}
+} // namespace geom
