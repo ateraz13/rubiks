@@ -57,7 +57,7 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
    }
 }
 EOM
-awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }" "$input_files" | grep -v glfw | grep -v glew | sort | uniq |
+cat ${input_files} | awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }"  | grep -v glfw | grep -v glew | sort | uniq |
 while read -r func_name ; do
     echo "#define d$func_name(args...) \\"
     echo "  dbg_gl_call($func_name, __FILE__, __LINE__, \"$func_name\", args)"
