@@ -1,6 +1,7 @@
 #include "game.hxx"
 #include "except.hxx"
 #include "gl.hxx"
+#include "gl_calls.hxx"
 #include "utility.hxx"
 #include <GLFW/glfw3.h>
 #include <cmath>
@@ -86,9 +87,10 @@ void main_window_resized_cb(GLFWwindow *window, int width, int height) {
 }
 
 void Game::acknowledge_main_window_resize(int width, int height) {
-  std::cout << "Window resized: width = " << width << ", height = " << height << "\n";
+  std::cout << "Window resized: width = " << width << ", height = " << height
+            << "\n";
   glfwMakeContextCurrent(m_main_window.get());
-  glViewport(0, 0, width, height);
+  dglViewport(0, 0, width, height);
 }
 
 void Game::init_input_system() {
@@ -136,6 +138,7 @@ void Game::init_window_system() {
     glfwMakeContextCurrent(mw);
 
     m_main_window = std::shared_ptr<GLFWwindow>(mw, [=](GLFWwindow *win) {
+      std::cout << "Destoying window!\n";
       glfwDestroyWindow(win);
       glfwTerminate();
     });
@@ -230,11 +233,14 @@ void Game::update() {
     action_queue.pop();
   }
 
+  glfwMakeContextCurrent(m_main_window.get());
   glClearColor(0.12f, 0.0, 0.12f, 1.0f);
   glClearDepth(10.0f);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_ALWAYS);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  EXPR_LOG(m_main_window.get());
 
   m_gfx.draw();
 

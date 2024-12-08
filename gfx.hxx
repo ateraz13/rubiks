@@ -3,15 +3,13 @@
 #include "gl.hxx"
 #include "shader.hxx"
 #include <array>
-#include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include "shader.hxx"
-#include <optional>
 
 namespace gfx {
 
@@ -51,12 +49,11 @@ public:
   enum struct Uniforms { MVP, COUNT };
 
   void init();
-  void send_mvp(const glm::mat4& mvp);
+  void send_mvp(const glm::mat4 &mvp);
   void send_position_data(const glm::vec3 *data, size_t count);
   void send_color_data(const glm::vec4 *data, size_t count);
   void send_index_data(const uint16_t *data, size_t count);
   void draw();
-
   SimpleMesh();
   ~SimpleMesh();
 
@@ -119,9 +116,6 @@ private:
   GPU m_gpu;
 };
 
-std::optional<GLuint> load_shader_from_disk(const std::string &vshader,
-                                            const std::string &fshader);
 } // namespace gfx
-
 
 #endif // GFX_HXX

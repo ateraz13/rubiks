@@ -1,6 +1,7 @@
 #include "gfx.hxx"
 #include "geom.hxx"
 #include "gl.hxx"
+#include "gl_calls.hxx"
 #include "iterator.hxx"
 #include "utility.hxx"
 #include <algorithm>
@@ -10,16 +11,12 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
-#include "iterator.hxx"
-#include "gl_calls.hxx"
 
-void precall_callback( const char* source_file, int line_num, const char* func_name)
-{
-}
+void precall_callback(const char *source_file, int line_num,
+                      const char *func_name) {}
 
-void postcall_callback( const char* source_file, int line_num, const char* func_name)
-{
-}
+void postcall_callback(const char *source_file, int line_num,
+                       const char *func_name) {}
 
 #define EXPR_LOG(expr) std::clog << (#expr) << " = " << (expr) << std::endl;
 #define ITER_LOG(container)                                                    \
@@ -82,8 +79,6 @@ gfx::Graphics::Graphics(GraphicalSettings settings)
   std::cout << "Creating graphics with settings!\n";
 }
 
-
-
 void gfx::Graphics::init_shaders() {
   auto vertex_shader_path = "./shaders/simple.vertex.glsl";
   auto fragment_shader_path = "./shaders/simple.fragment.glsl";
@@ -92,7 +87,8 @@ void gfx::Graphics::init_shaders() {
       Shader::from_file(GL_VERTEX_SHADER, vertex_shader_path),
       Shader::from_file(GL_FRAGMENT_SHADER, fragment_shader_path)};
 
-  auto main_shader_program = ShaderProgram::link(shaders.begin(), shaders.end());
+  auto main_shader_program =
+      ShaderProgram::link(shaders.begin(), shaders.end());
 
   std::cout << "main_shader = " << main_shader_program.id() << std::endl;
   this->m_main_shader = main_shader_program;
@@ -211,7 +207,7 @@ void gfx::SimpleMesh::init() {
 #define ATTRIB_ID(attrib) (this->m_attribs[SIZE(Attributes::attrib)])
 #define UNIFORM_ID(unif) (this->m_uniforms[SIZE(Uniforms::unif)])
 
-void gfx::SimpleMesh::send_mvp(const glm::mat4& mat) {
+void gfx::SimpleMesh::send_mvp(const glm::mat4 &mat) {
   glUniformMatrix4fv(UNIFORM_ID(MVP), 1, GL_FALSE, &mat[0][0]);
 }
 
@@ -220,15 +216,14 @@ gfx::SimpleMesh::~SimpleMesh() {
   dglDeleteVertexArrays(1, &m_vao);
 }
 
-
 void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
   dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(POSITION));
   dglBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * count, data,
-               GL_STATIC_DRAW);
+                GL_STATIC_DRAW);
   EXPR_LOG(BUFFER_ID(POSITION));
-  dglVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE,
-                        0, nullptr);
+  dglVertexAttribPointer(ATTRIB_ID(POSITION), 3, GL_FLOAT, GL_FALSE, 0,
+                         nullptr);
   dglEnableVertexAttribArray(ATTRIB_ID(POSITION));
   EXPR_LOG(ATTRIB_ID(POSITION));
 
@@ -239,10 +234,9 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
   dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ARRAY_BUFFER, BUFFER_ID(COLOR));
   dglBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * count, data,
-               GL_STATIC_DRAW);
+                GL_STATIC_DRAW);
   EXPR_LOG(ATTRIB_ID(COLOR));
-  dglVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE,
-                        0, nullptr);
+  dglVertexAttribPointer(ATTRIB_ID(COLOR), 4, GL_FLOAT, GL_FALSE, 0, nullptr);
   dglEnableVertexAttribArray(ATTRIB_ID(COLOR));
   glBindVertexArray(0);
 }
@@ -251,14 +245,14 @@ void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
   dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BUFFER_ID(INDEX));
   dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
-               GL_STATIC_DRAW);
+                GL_STATIC_DRAW);
   m_index_count = count;
   glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
-  dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, (void*) 0);
+  dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
   dglBindVertexArray(0);
 }
 
@@ -266,4 +260,3 @@ void gfx::SimpleMesh::draw() {
 #undef BUFFER_ID
 #undef ITER_LOG
 #undef EXPR_LOG
-
