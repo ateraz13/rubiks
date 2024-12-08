@@ -4,10 +4,12 @@
 #include "gl_calls.hxx"
 #include "utility.hxx"
 #include <GLFW/glfw3.h>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 
 #define DEBUG_MESSAGES
 
@@ -16,8 +18,7 @@ const int MAIN_WINDOW_DEFAULT_WIDTH = 1024;
 const char *MAIN_WINDOW_DEFAULT_TITLE = "Rubiks";
 
 Game &Game::instance() {
-  static Game game;
-  game.init();
+  static auto &game = Game::init();
   return game;
 }
 
@@ -29,13 +30,13 @@ Game::Game()
     : m_rcube(), m_gfx(), m_animation_speed(1.0f), m_main_window(nullptr),
       m_has_initialized(false) {}
 
-void Game::init() {
-  if (!m_has_initialized) {
-    m_has_initialized = true;
-    init_window_system();
-    init_input_system();
-    m_gfx.init();
-  }
+Game &Game::init() {
+  static Game game;
+  game.init_window_system();
+  game.init_input_system();
+  game.m_gfx.init();
+
+  return game;
 }
 
 Game::~Game() {
@@ -76,7 +77,7 @@ void Game::handle_inputs(GLFWwindow *win, Game::KeyboardKey key, int scancode,
         std::cout << "Adding quit game action!\n";
       }
 #endif
-      game.action_queue.push(a->second);
+      game.m_action_queue.push(a->second);
     }
   }
 }
@@ -178,8 +179,10 @@ void Game::stop() { m_is_running = false; }
 
 void Game::update() {
 
-  while (action_queue.size() > 0) {
-    auto action = action_queue.front();
+  using namespace std::chrono;
+
+  while (m_action_queue.size() > 0) {
+    auto action = m_action_queue.front();
 
 #ifdef DEBUG_MESSAGES
     std::cout << "Found action #" << action << "!\n";
@@ -230,8 +233,10 @@ void Game::update() {
       break;
     }
 
-    action_queue.pop();
+    m_action_queue.pop();
   }
+
+  auto frame_begin_time = steady_clock::now();
 
   glfwMakeContextCurrent(m_main_window.get());
   glClearColor(0.12f, 0.0, 0.12f, 1.0f);
@@ -246,6 +251,12 @@ void Game::update() {
 
   glfwSwapBuffers(m_main_window.get());
   glfwPollEvents();
+  using namespace std::chrono_literals;
+  using std::chrono::duration;
+
+  auto sleep_duration = std::max(duration_cast<milliseconds>(60ms - (frame_begin_time - m_last_frame_timepoint)), 0ms);
+  std::this_thread::sleep_for(sleep_duration);
+  m_last_frame_timepoint = frame_begin_time;
 }
 
 bool Game::KeyEvent::operator<(const Game::KeyEvent &other) const {

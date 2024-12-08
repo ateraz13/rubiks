@@ -2,10 +2,11 @@
 #define GAME_HXX
 #include "geom.hxx"
 #include "gfx.hxx"
-#include "utility.hxx"
 #include "gl.hxx"
+#include "utility.hxx"
 #include <GLFW/glfw3.h>
 #include <array>
+#include <chrono>
 #include <cstdint>
 // #include <glad/gl.h>
 #include <map>
@@ -44,7 +45,6 @@ public:
 
   static Game &instance();
 
-  void init();
   void start();
   void update();
   void stop();
@@ -69,10 +69,6 @@ public:
   };
 
 private:
-  Game();
-
-  void update_current_time();
-
   enum Action {
     QUIT_GAME,
     ROTATE_1ST_COLUMN_FORWARD,
@@ -90,6 +86,11 @@ private:
     ACTION_COUNT // Always last
   };
 
+  static Game &init();
+  Game();
+
+  void update_current_time();
+
   void init_window_system();
   void init_input_system();
   static void handle_inputs(GLFWwindow *win, Game::KeyboardKey key,
@@ -103,9 +104,10 @@ private:
   bool m_has_initialized = false;
   float m_animation_speed = 1.0f;
   std::shared_ptr<GLFWwindow> m_main_window;
-  std::queue<Action> action_queue;
+  std::queue<Action> m_action_queue;
   std::map<KeyEvent, Action> m_keymap;
   gfx::Graphics m_gfx;
+  std::chrono::time_point<std::chrono::steady_clock> m_last_frame_timepoint;
 };
 
 extern const int MAIN_WINDOW_DEFAULT_HEIGHT;
