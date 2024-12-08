@@ -254,7 +254,10 @@ void Game::update() {
   using namespace std::chrono_literals;
   using std::chrono::duration;
 
-  auto sleep_duration = std::max(duration_cast<milliseconds>(60ms - (frame_begin_time - m_last_frame_timepoint)), 0ms);
+  auto sleep_duration =
+      std::max(duration_cast<milliseconds>(
+                   60ms - (frame_begin_time - m_last_frame_timepoint)),
+               0ms);
   std::this_thread::sleep_for(sleep_duration);
   m_last_frame_timepoint = frame_begin_time;
 }
