@@ -18,13 +18,6 @@ void precall_callback(const char *source_file, int line_num,
 void postcall_callback(const char *source_file, int line_num,
                        const char *func_name) {}
 
-#define EXPR_LOG(expr) std::clog << (#expr) << " = " << (expr) << std::endl;
-#define ITER_LOG(container)                                                    \
-  {                                                                            \
-    std::clog << (#container) << " = ";                                        \
-    ITER_LOG_INNER(container);                                                 \
-    std::cout << std::endl;                                                    \
-  }
 
 void ITER_LOG_INNER(auto container) {
   std::clog << "{ ";
