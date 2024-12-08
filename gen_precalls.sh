@@ -13,8 +13,9 @@ input_files=${@:1:$input_file_count}
 output_header=${cmd_args[$(($# - 2))]}
 output_source=${cmd_args[$(($# - 1))]}
 
-# void return value calls
-cat <<EOF > "$output_header"
+# void re
+{
+cat <<EOF
 #ifndef GL_CALLS_HXX
 #define GL_CALLS_HXX
 
@@ -59,9 +60,10 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
        return ret;
    }
 }
-
 #endif //GL_CALLS_HXX
-EOM
+EOF
+} > "$output_header"
+
 
 cat ${input_files} | awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }"  | grep -v glfw | grep -v glew | sort | uniq |
 while read -r func_name ; do
@@ -69,9 +71,11 @@ while read -r func_name ; do
     echo "  dbg_gl_call($func_name, __FILE__, __LINE__, \"$func_name\", args)" >> "$output_header"
 done
 
-cat <<EOF > "$output_source"
+{
+cat <<EOF
 #include "$output_header"
 
 void dbg_gl_print_args_internal () {}
 void dbg_gl_print_args () {}
 EOF
+} > "$output_source"
