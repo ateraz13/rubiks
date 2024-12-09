@@ -180,6 +180,11 @@ void gfx::Graphics::draw() {
 }
 
 void gfx::GPU::draw() {
+
+  glm::mat4 model = glm::mat4(1.0);
+  glm::mat4 view = glm::mat4::
+  glm::mat4 mvp =
+
   square_mesh.draw();
   triangle_mesh.draw();
   cube_mesh.draw();
@@ -190,7 +195,7 @@ gfx::SimpleMesh::SimpleMesh() {}
 void gfx::SimpleMesh::init() {
   std::cout << "Buffers::COUNT = " << SIZE(BufferType::COUNT) << std::endl;
   dglGenVertexArrays(1, &m_vao);
-  glBindVertexArray(m_vao);
+  dglBindVertexArray(m_vao);
   dglGenBuffers(SIZE(BufferType::COUNT), &m_buffers[0]);
   dglBindVertexArray(0);
 }
@@ -205,26 +210,26 @@ gfx::SimpleMesh::~SimpleMesh() {
 }
 
 void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
+  dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
   dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
-  dglBindVertexArray(m_vao);
   dglEnableVertexAttribArray(attrib_id(AttribType::POSITION));
   EXPR_LOG(buffer_id(BufferType::POSITION));
   dglVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE, 0,
                          nullptr);
   EXPR_LOG(attrib_id(AttribType::POSITION));
 
-  glBindVertexArray(0);
+  dglBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
+  dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::COLOR));
   dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
-  dglBindVertexArray(m_vao);
   EXPR_LOG(attrib_id(AttribType::COLOR));
   dglEnableVertexAttribArray(attrib_id(AttribType::COLOR));
   dglVertexAttribPointer(attrib_id(AttribType::COLOR), 4, GL_FLOAT, GL_FALSE, 0, nullptr);
-  glBindVertexArray(0);
+  dglBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
@@ -233,7 +238,7 @@ void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
   dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
                 GL_STATIC_DRAW);
   m_index_count = count;
-  glBindVertexArray(0);
+  dglBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::draw() {
@@ -248,3 +253,16 @@ GLuint gfx::SimpleMesh::buffer_id(BufferType buffer) { return m_buffers[SIZE(buf
 GLuint gfx::SimpleMesh::attrib_id(AttribType attrib) { return m_attribs[SIZE(attrib)]; }
 
 GLuint gfx::SimpleMesh::uniform_id(UniformType uniform) { return m_uniforms[SIZE(uniform)]; }
+
+void gfx::Graphics::viewport_size(int width, int height) {
+  m_viewport_size = glm::ivec2(width, height);
+}
+
+void gfx::Graphics::viewport_size(glm::ivec2 size) {
+  m_viewport_size = glm::ivec2(size);
+}
+
+glm::ivec2 gfx::Graphics::viewport_size() const {
+  return m_viewport_size;
+  glViewport(0, 0, m_viewport_size.x, m_viewport_size.y);
+}

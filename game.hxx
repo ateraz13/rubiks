@@ -101,7 +101,6 @@ private:
   double m_current_time = 0.0;
   uint64_t delta_time = 0;
   bool m_is_running = false;
-  bool m_has_initialized = false;
   float m_animation_speed = 1.0f;
   std::shared_ptr<GLFWwindow> m_main_window;
   std::queue<Action> m_action_queue;

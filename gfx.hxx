@@ -1,10 +1,12 @@
 #ifndef GFX_HXX
 #define GFX_HXX
+#include "game.hxx"
 #include "gl.hxx"
 #include "shader.hxx"
 #include <array>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
 #include <optional>
@@ -113,8 +115,12 @@ public:
 
   void init_shaders();
   void draw();
+  void viewport_size(int width, int height);
+  void viewport_size(glm::ivec2 size);
+  glm::ivec2 viewport_size() const;
 
 private:
+  glm::ivec2 m_viewport_size = {MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT};
   GraphicalSettings m_settings;
   std::optional<ShaderProgram> m_main_shader = std::nullopt;
   GPU m_gpu;

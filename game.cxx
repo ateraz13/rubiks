@@ -26,12 +26,11 @@ void glfw_error_callback(int error, const char *desc) {
   fprintf(stderr, "GLFW Error: %s\n", desc);
 }
 
-Game::Game()
-    : m_rcube(), m_gfx(), m_animation_speed(1.0f), m_main_window(nullptr),
-      m_has_initialized(false) {}
+Game::Game() {}
 
 Game &Game::init() {
   static Game game;
+  std::cout << "Initialising game!\n";
   game.init_window_system();
   game.init_input_system();
   game.m_gfx.init();
@@ -91,7 +90,7 @@ void Game::acknowledge_main_window_resize(int width, int height) {
   std::cout << "Window resized: width = " << width << ", height = " << height
             << "\n";
   glfwMakeContextCurrent(m_main_window.get());
-  dglViewport(0, 0, width, height);
+  m_gfx.viewport_size(width, height);
 }
 
 void Game::init_input_system() {
@@ -111,11 +110,11 @@ void Game::init_input_system() {
 
 void Game::init_window_system() {
 
-  glfwSetErrorCallback(glfw_error_callback);
-
   if (!glfwInit()) {
     throw std::runtime_error("Could not initialise GLFW!");
   }
+
+  glfwSetErrorCallback(glfw_error_callback);
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -144,10 +143,12 @@ void Game::init_window_system() {
       glfwTerminate();
     });
 
+    EXPR_LOG(m_main_window.get());
+
     load_opengl_funcs(&glfwGetProcAddress);
 
     glfwSwapInterval(0);
-    glViewport(0, 0, MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT);
+    m_gfx.viewport_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT);
   }
 }
 
@@ -240,9 +241,9 @@ void Game::update() {
 
   glfwMakeContextCurrent(m_main_window.get());
   glClearColor(0.12f, 0.0, 0.12f, 1.0f);
-  glClearDepth(10.0f);
+  // glClearDepth(10.0f);
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_ALWAYS);
+  // glDepthFunc(GL_ALWAYS);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   EXPR_LOG(m_main_window.get());
@@ -254,10 +255,11 @@ void Game::update() {
   using namespace std::chrono_literals;
   using std::chrono::duration;
 
+  auto elapsed_duration = duration_cast<milliseconds>(
+      60ms - (frame_begin_time - m_last_frame_timepoint));
+
   auto sleep_duration =
-      std::max(duration_cast<milliseconds>(
-                   60ms - (frame_begin_time - m_last_frame_timepoint)),
-               0ms);
+      std::max(elapsed_duration, 0ms);
   std::this_thread::sleep_for(sleep_duration);
   m_last_frame_timepoint = frame_begin_time;
 }
