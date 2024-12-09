@@ -5,6 +5,10 @@
 #include "iterator.hxx"
 #include "utility.hxx"
 #include <algorithm>
+#include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/scalar_constants.hpp>
 #include <array>
 #include <cstring>
 #include <iostream>
@@ -181,12 +185,16 @@ void gfx::Graphics::draw() {
 
 void gfx::GPU::draw() {
 
-  glm::mat4 model = glm::mat4(1.0);
-  glm::mat4 view = glm::mat4::
-  glm::mat4 mvp =
+  glm::mat4 model = glm::mat4(1.0f);
+	glm::mat4 projection = glm::perspective(glm::pi<float>() * 0.25f, 4.0f / 3.0f, 0.1f, 100.f);
+  glm::mat4 view = glm::mat4(1.0f);
+  glm::mat4 mvp = projection * view * model;
 
+  square_mesh.send_mvp(mvp);
   square_mesh.draw();
+  triangle_mesh.send_mvp(mvp);
   triangle_mesh.draw();
+  cube_mesh.send_mvp(mvp);
   cube_mesh.draw();
 }
 

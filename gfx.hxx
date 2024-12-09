@@ -1,12 +1,12 @@
 #ifndef GFX_HXX
 #define GFX_HXX
-#include "game.hxx"
+#include "const.hxx"
 #include "gl.hxx"
 #include "shader.hxx"
 #include <array>
 #include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <iostream>
 #include <optional>
@@ -15,7 +15,9 @@
 
 namespace gfx {
 
-constexpr auto SIZE(auto x) -> size_t { return static_cast<size_t>(x); }
+template <typename T> constexpr size_t SIZE(T x) {
+  return static_cast<size_t>(x);
+}
 
 /* NOTE: The graphical settings are stored in a separate class because
   I wanted to decouple where the settings from where its used. This way
@@ -120,7 +122,8 @@ public:
   glm::ivec2 viewport_size() const;
 
 private:
-  glm::ivec2 m_viewport_size = {MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT};
+  glm::ivec2 m_viewport_size = {MAIN_WINDOW_DEFAULT_WIDTH,
+                                MAIN_WINDOW_DEFAULT_HEIGHT};
   GraphicalSettings m_settings;
   std::optional<ShaderProgram> m_main_shader = std::nullopt;
   GPU m_gpu;

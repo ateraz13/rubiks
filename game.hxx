@@ -1,8 +1,8 @@
 #ifndef GAME_HXX
 #define GAME_HXX
 #include "geom.hxx"
-#include "gfx.hxx"
 #include "gl.hxx"
+#include "gfx.hxx"
 #include "utility.hxx"
 #include <GLFW/glfw3.h>
 #include <array>
@@ -13,6 +13,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include "const.hxx"
 
 class RubiksCube {
 public:
@@ -109,8 +110,5 @@ private:
   std::chrono::time_point<std::chrono::steady_clock> m_last_frame_timepoint;
 };
 
-extern const int MAIN_WINDOW_DEFAULT_HEIGHT;
-extern const int MAIN_WINDOW_DEFAULT_WIDTH;
-extern const char *MAIN_WINDOW_DEFAULT_TITLE;
 
 #endif // GAME_HXX
