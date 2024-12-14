@@ -15,6 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#include "game.hxx"
 
 void precall_callback(const char *source_file, int line_num,
                       const char *func_name) {}
@@ -179,6 +180,8 @@ void gfx::GPU::init_cube() {
 
 void gfx::Graphics::draw() {
   // EXPR_LOG(m_main_shader->id());
+  auto viewport_size = m_viewport_size.load();
+  dglViewport(0, 0, viewport_size.x, viewport_size.y);
   m_main_shader->use();
   m_gpu.draw();
 }
@@ -187,7 +190,9 @@ void gfx::GPU::draw() {
 
   glm::mat4 model = glm::mat4(1.0f);
 	glm::mat4 projection = glm::perspective(glm::pi<float>() * 0.25f, 4.0f / 3.0f, 0.1f, 100.f);
-  glm::mat4 view = glm::mat4(1.0f);
+  glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
+  auto time = Game::instance().current_time();
+  view = glm::rotate(view, static_cast<float>(glm::pi<double>()*time), glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 mvp = projection * view * model;
 
   square_mesh.send_mvp(mvp);
@@ -263,14 +268,13 @@ GLuint gfx::SimpleMesh::attrib_id(AttribType attrib) { return m_attribs[SIZE(att
 GLuint gfx::SimpleMesh::uniform_id(UniformType uniform) { return m_uniforms[SIZE(uniform)]; }
 
 void gfx::Graphics::viewport_size(int width, int height) {
-  m_viewport_size = glm::ivec2(width, height);
+  m_viewport_size.store(glm::ivec2(width, height));
 }
 
 void gfx::Graphics::viewport_size(glm::ivec2 size) {
-  m_viewport_size = glm::ivec2(size);
+  m_viewport_size.store(glm::ivec2(size));
 }
 
 glm::ivec2 gfx::Graphics::viewport_size() const {
-  return m_viewport_size;
-  glViewport(0, 0, m_viewport_size.x, m_viewport_size.y);
+  return m_viewport_size.load();
 }

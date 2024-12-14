@@ -69,6 +69,8 @@ public:
     bool operator<(const KeyEvent &other) const;
   };
 
+  double current_time() const;
+
 private:
   enum Action {
     QUIT_GAME,

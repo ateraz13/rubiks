@@ -1,6 +1,7 @@
 #include "gfx.hxx"
 #include "iterator.hxx"
 #include "utility.hxx"
+#include "gl_calls.hxx"
 
 std::string stringify_shader_type(GLenum shader_type) {
   switch (shader_type) {
@@ -146,5 +147,5 @@ void ShaderProgram::use() const {
     if(m_id == 0) {
         throw std::runtime_error("Tried to use invalid shader program!\n");
     }
-    glUseProgram(m_id);
+    dglUseProgram(m_id);
 }

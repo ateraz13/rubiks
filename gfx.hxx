@@ -12,6 +12,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <atomic>
 
 namespace gfx {
 
@@ -122,8 +123,8 @@ public:
   glm::ivec2 viewport_size() const;
 
 private:
-  glm::ivec2 m_viewport_size = {MAIN_WINDOW_DEFAULT_WIDTH,
-                                MAIN_WINDOW_DEFAULT_HEIGHT};
+  std::atomic<glm::ivec2> m_viewport_size = {{MAIN_WINDOW_DEFAULT_WIDTH,
+                                MAIN_WINDOW_DEFAULT_HEIGHT}};
   GraphicalSettings m_settings;
   std::optional<ShaderProgram> m_main_shader = std::nullopt;
   GPU m_gpu;

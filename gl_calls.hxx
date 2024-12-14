@@ -42,18 +42,28 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
        return ret;
    }
 }
-
 #endif //GL_CALLS_HXX
-EOM
-
-cat gfx.cxx game.cxx shader.cxx | awk "match($0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }"  | grep -v glfw | grep -v glew | sort | uniq |
-while read -r func_name ; do
-    echo "#define d(args...) \" >> "gl_calls.hxx"
-    echo "  dbg_gl_call(, __FILE__, __LINE__, \"\", args)" >> "gl_calls.hxx"
-done
-
-cat <<EOF > "gl_calls.cxx"
-#include "gl_calls.hxx"
-
-void dbg_gl_print_args_internal () {}
-void dbg_gl_print_args () {}
+#define dglBindBuffer(args...) \
+  dbg_gl_call(glBindBuffer, __FILE__, __LINE__, "glBindBuffer", args)
+#define dglBindVertexArray(args...) \
+  dbg_gl_call(glBindVertexArray, __FILE__, __LINE__, "glBindVertexArray", args)
+#define dglBufferData(args...) \
+  dbg_gl_call(glBufferData, __FILE__, __LINE__, "glBufferData", args)
+#define dglDeleteBuffers(args...) \
+  dbg_gl_call(glDeleteBuffers, __FILE__, __LINE__, "glDeleteBuffers", args)
+#define dglDeleteVertexArrays(args...) \
+  dbg_gl_call(glDeleteVertexArrays, __FILE__, __LINE__, "glDeleteVertexArrays", args)
+#define dglDrawElements(args...) \
+  dbg_gl_call(glDrawElements, __FILE__, __LINE__, "glDrawElements", args)
+#define dglEnableVertexAttribArray(args...) \
+  dbg_gl_call(glEnableVertexAttribArray, __FILE__, __LINE__, "glEnableVertexAttribArray", args)
+#define dglGenBuffers(args...) \
+  dbg_gl_call(glGenBuffers, __FILE__, __LINE__, "glGenBuffers", args)
+#define dglGenVertexArrays(args...) \
+  dbg_gl_call(glGenVertexArrays, __FILE__, __LINE__, "glGenVertexArrays", args)
+#define dglUseProgram(args...) \
+  dbg_gl_call(glUseProgram, __FILE__, __LINE__, "glUseProgram", args)
+#define dglVertexAttribPointer(args...) \
+  dbg_gl_call(glVertexAttribPointer, __FILE__, __LINE__, "glVertexAttribPointer", args)
+#define dglViewport(args...) \
+  dbg_gl_call(glViewport, __FILE__, __LINE__, "glViewport", args)

@@ -244,7 +244,8 @@ void Game::update() {
   // glClearDepth(10.0f);
   glEnable(GL_DEPTH_TEST);
   // glDepthFunc(GL_ALWAYS);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT);
 
   EXPR_LOG(m_main_window.get());
 
@@ -252,11 +253,14 @@ void Game::update() {
 
   glfwSwapBuffers(m_main_window.get());
   glfwPollEvents();
+
   using namespace std::chrono_literals;
   using std::chrono::duration;
 
+  auto framerate = 2;
+
   auto elapsed_duration = duration_cast<milliseconds>(
-      60ms - (frame_begin_time - m_last_frame_timepoint));
+      milliseconds(1000/framerate) - (frame_begin_time - m_last_frame_timepoint));
 
   auto sleep_duration =
       std::max(elapsed_duration, 0ms);
@@ -335,3 +339,7 @@ void RubiksCube::rotate_3rd_row_backwards() {
 }
 
 void RubiksCube::reset() { std::cout << "reset" << std::endl; }
+
+double Game::current_time() const {
+  return m_current_time;
+}
