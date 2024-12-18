@@ -1,21 +1,21 @@
 #include "gfx.hxx"
+#include "game.hxx"
 #include "geom.hxx"
 #include "gl.hxx"
 #include "gl_calls.hxx"
 #include "iterator.hxx"
 #include "utility.hxx"
 #include <algorithm>
-#include <glm/mat4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/scalar_constants.hpp>
 #include <array>
 #include <cstring>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/scalar_constants.hpp>
+#include <glm/mat4x4.hpp>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
-#include "game.hxx"
 
 void precall_callback(const char *source_file, int line_num,
                       const char *func_name) {}
@@ -189,10 +189,13 @@ void gfx::Graphics::draw() {
 void gfx::GPU::draw() {
 
   glm::mat4 model = glm::mat4(1.0f);
-	glm::mat4 projection = glm::perspective(glm::pi<float>() * 0.25f, 4.0f / 3.0f, 0.1f, 100.f);
-  glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
+  glm::mat4 projection =
+      glm::perspective(glm::pi<float>() * 0.25f, 4.0f / 3.0f, 0.1f, 100.f);
+  glm::mat4 view =
+      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
   auto time = Game::instance().current_time();
-  view = glm::rotate(view, static_cast<float>(glm::pi<double>()*time), glm::vec3(0.0f, 1.0f, 0.0f));
+  view = glm::rotate(view, static_cast<float>(glm::pi<double>() * time),
+                     glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 mvp = projection * view * model;
 
   square_mesh.send_mvp(mvp);
@@ -228,8 +231,8 @@ void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
   dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
   dglEnableVertexAttribArray(attrib_id(AttribType::POSITION));
   EXPR_LOG(buffer_id(BufferType::POSITION));
-  dglVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE, 0,
-                         nullptr);
+  dglVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE,
+                         0, nullptr);
   EXPR_LOG(attrib_id(AttribType::POSITION));
 
   dglBindVertexArray(0);
@@ -241,7 +244,8 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
   dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
   EXPR_LOG(attrib_id(AttribType::COLOR));
   dglEnableVertexAttribArray(attrib_id(AttribType::COLOR));
-  dglVertexAttribPointer(attrib_id(AttribType::COLOR), 4, GL_FLOAT, GL_FALSE, 0, nullptr);
+  dglVertexAttribPointer(attrib_id(AttribType::COLOR), 4, GL_FLOAT, GL_FALSE, 0,
+                         nullptr);
   dglBindVertexArray(0);
 }
 
@@ -256,16 +260,22 @@ void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
 
 void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
-  dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
+  // dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
   dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
   dglBindVertexArray(0);
 }
 
-GLuint gfx::SimpleMesh::buffer_id(BufferType buffer) { return m_buffers[SIZE(buffer)]; }
+GLuint gfx::SimpleMesh::buffer_id(BufferType buffer) {
+  return m_buffers[SIZE(buffer)];
+}
 
-GLuint gfx::SimpleMesh::attrib_id(AttribType attrib) { return m_attribs[SIZE(attrib)]; }
+GLuint gfx::SimpleMesh::attrib_id(AttribType attrib) {
+  return m_attribs[SIZE(attrib)];
+}
 
-GLuint gfx::SimpleMesh::uniform_id(UniformType uniform) { return m_uniforms[SIZE(uniform)]; }
+GLuint gfx::SimpleMesh::uniform_id(UniformType uniform) {
+  return m_uniforms[SIZE(uniform)];
+}
 
 void gfx::Graphics::viewport_size(int width, int height) {
   m_viewport_size.store(glm::ivec2(width, height));
