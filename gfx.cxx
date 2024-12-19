@@ -17,6 +17,48 @@
 #include <stdexcept>
 #include <utility>
 
+const char *gl_error_string(GLuint err) {
+  switch (err) {
+  case GL_NO_ERROR:
+    return "No error has been recorded.";
+    break;
+  case GL_INVALID_ENUM:
+    return "An unacceptable value is specified for an enumerated "
+           "argument. The offending command is ignored and has no other "
+           "side effect than to set the error flag.";
+    break;
+  case GL_INVALID_VALUE:
+    return "A numeric argument is out of range. The offending command is "
+      "ignored and has no other side effect than to set the error flag.";
+    break;
+  case GL_INVALID_OPERATION:
+    return "The specified operation is not allowed in the current state. "
+           "The offending command is ignored and has no other side "
+           "effect than to set the error flag.";
+    break;
+  case GL_INVALID_FRAMEBUFFER_OPERATION:
+    return "The framebuffer object is not complete. The offending command is "
+           "ignored and has no other side effect than to set the error flag.";
+    break;
+  case GL_OUT_OF_MEMORY:
+    return "There is not enough memory left to execute the command. The "
+           "state of the GL is undefined, except for the state of the "
+           "error flags, after this error is recorded.";
+    break;
+  case GL_STACK_UNDERFLOW:
+    return "An attempt has been made to perform an operation that would "
+           "cause an internal stack to underflow.";
+    break;
+  case GL_STACK_OVERFLOW:
+    return "An attempt has been made to perform an operation that would "
+           "cause an internal stack to overflow.";
+    break;
+  default:
+    return "Unknown OpenGL error.";
+    break;
+  }
+}
+
 void precall_callback(const char *source_file, int line_num,
                       const char *func_name) {}
 
@@ -25,49 +67,9 @@ void postcall_callback(const char *source_file, int line_num,
 
   auto err = glGetError();
 
-  switch (err) {
-  case GL_NO_ERROR:
-    std::cout << "No error has been recorded.";
-    break;
-  case GL_INVALID_ENUM:
-    std::cout << "An unacceptable value is specified for an enumerated "
-                 "argument. The offending command is ignored and has no other "
-                 "side effect than to set the error flag.";
-    break;
-  case GL_INVALID_VALUE:
-    std::cout
-        << "A numeric argument is out of range. The offending command is "
-           "ignored and has no other side effect than to set the error flag.";
-    break;
-  case GL_INVALID_OPERATION:
-    std::cout << "The specified operation is not allowed in the current state. "
-                 "The offending command is ignored and has no other side "
-                 "effect than to set the error flag.";
-    break;
-  case GL_INVALID_FRAMEBUFFER_OPERATION:
-    std::cout
-        << "The framebuffer object is not complete. The offending command is "
-           "ignored and has no other side effect than to set the error flag.";
-    break;
-  case GL_OUT_OF_MEMORY:
-    std::cout << "There is not enough memory left to execute the command. The "
-                 "state of the GL is undefined, except for the state of the "
-                 "error flags, after this error is recorded.";
-    break;
-  case GL_STACK_UNDERFLOW:
-    std::cout << "An attempt has been made to perform an operation that would "
-                 "cause an internal stack to underflow.";
-    break;
-  case GL_STACK_OVERFLOW:
-    std::cout << "An attempt has been made to perform an operation that would "
-                 "cause an internal stack to overflow.";
-    break;
-  default:
-    std::cout << "Unknown OpenGL error.";
-    break;
-  }
 
-  std::cout << "\n";
+  std::cout << gl_error_string(err) << "\n";
+
 }
 
 void ITER_LOG_INNER(auto container) {
