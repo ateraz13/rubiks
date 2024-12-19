@@ -241,11 +241,10 @@ void Game::update() {
 
   glfwMakeContextCurrent(m_main_window.get());
   glClearColor(0.12f, 0.0, 0.12f, 1.0f);
-  // glClearDepth(10.0f);
+  glClearDepth(10.0f);
   glEnable(GL_DEPTH_TEST);
-  // glDepthFunc(GL_ALWAYS);
-  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glDepthFunc(GL_ALWAYS);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   EXPR_LOG(m_main_window.get());
 

@@ -21,7 +21,54 @@ void precall_callback(const char *source_file, int line_num,
                       const char *func_name) {}
 
 void postcall_callback(const char *source_file, int line_num,
-                       const char *func_name) {}
+                       const char *func_name) {
+
+  auto err = glGetError();
+
+  switch (err) {
+  case GL_NO_ERROR:
+    std::cout << "No error has been recorded.";
+    break;
+  case GL_INVALID_ENUM:
+    std::cout << "An unacceptable value is specified for an enumerated "
+                 "argument. The offending command is ignored and has no other "
+                 "side effect than to set the error flag.";
+    break;
+  case GL_INVALID_VALUE:
+    std::cout
+        << "A numeric argument is out of range. The offending command is "
+           "ignored and has no other side effect than to set the error flag.";
+    break;
+  case GL_INVALID_OPERATION:
+    std::cout << "The specified operation is not allowed in the current state. "
+                 "The offending command is ignored and has no other side "
+                 "effect than to set the error flag.";
+    break;
+  case GL_INVALID_FRAMEBUFFER_OPERATION:
+    std::cout
+        << "The framebuffer object is not complete. The offending command is "
+           "ignored and has no other side effect than to set the error flag.";
+    break;
+  case GL_OUT_OF_MEMORY:
+    std::cout << "There is not enough memory left to execute the command. The "
+                 "state of the GL is undefined, except for the state of the "
+                 "error flags, after this error is recorded.";
+    break;
+  case GL_STACK_UNDERFLOW:
+    std::cout << "An attempt has been made to perform an operation that would "
+                 "cause an internal stack to underflow.";
+    break;
+  case GL_STACK_OVERFLOW:
+    std::cout << "An attempt has been made to perform an operation that would "
+                 "cause an internal stack to overflow.";
+    break;
+  default:
+    std::cout << "Unknown OpenGL error.";
+    break;
+  }
+
+  std::cout << "\n";
+}
 
 void ITER_LOG_INNER(auto container) {
   std::clog << "{ ";
@@ -132,9 +179,9 @@ void gfx::GPU::init() {
 
   glDebugMessageCallback(&gl_error_callback, 0);
 
-  init_square();
+  // init_square();
   init_triangle();
-  init_cube();
+  // init_cube();
 }
 
 void gfx::GPU::init_square() {
@@ -198,12 +245,12 @@ void gfx::GPU::draw() {
                      glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 mvp = projection * view * model;
 
-  square_mesh.send_mvp(mvp);
-  square_mesh.draw();
+  // square_mesh.send_mvp(mvp);
+  // square_mesh.draw();
   triangle_mesh.send_mvp(mvp);
   triangle_mesh.draw();
-  cube_mesh.send_mvp(mvp);
-  cube_mesh.draw();
+  // cube_mesh.send_mvp(mvp);
+  // cube_mesh.draw();
 }
 
 gfx::SimpleMesh::SimpleMesh() {}
@@ -212,7 +259,7 @@ void gfx::SimpleMesh::init() {
   std::cout << "Buffers::COUNT = " << SIZE(BufferType::COUNT) << std::endl;
   dglGenVertexArrays(1, &m_vao);
   dglBindVertexArray(m_vao);
-  dglGenBuffers(SIZE(BufferType::COUNT), &m_buffers[0]);
+  dglGenBuffers(m_buffers.size(), &m_buffers[0]);
   dglBindVertexArray(0);
 }
 
@@ -229,6 +276,9 @@ void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
   dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
   dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
+  for (auto p = data; p < data + count; p++) {
+    std::cout << "{" << p->x << ", " << p->y << ", " << p->z << "}\n";
+  }
   dglEnableVertexAttribArray(attrib_id(AttribType::POSITION));
   EXPR_LOG(buffer_id(BufferType::POSITION));
   dglVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE,
@@ -250,18 +300,19 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
-  dglBindVertexArray(m_vao);
-  dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
-  dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
-                GL_STATIC_DRAW);
-  m_index_count = count;
-  dglBindVertexArray(0);
+  // dglBindVertexArray(m_vao);
+  // dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
+  // dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
+  //               GL_STATIC_DRAW);
+  // m_index_count = count;
+  // dglBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
   // dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
-  dglDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
+  dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
+  dglDrawArrays(GL_TRIANGLES, 0, 3);
   dglBindVertexArray(0);
 }
 

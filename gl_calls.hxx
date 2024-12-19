@@ -53,8 +53,8 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
   dbg_gl_call(glDeleteBuffers, __FILE__, __LINE__, "glDeleteBuffers", args)
 #define dglDeleteVertexArrays(args...) \
   dbg_gl_call(glDeleteVertexArrays, __FILE__, __LINE__, "glDeleteVertexArrays", args)
-#define dglDrawElements(args...) \
-  dbg_gl_call(glDrawElements, __FILE__, __LINE__, "glDrawElements", args)
+#define dglDrawArrays(args...) \
+  dbg_gl_call(glDrawArrays, __FILE__, __LINE__, "glDrawArrays", args)
 #define dglEnableVertexAttribArray(args...) \
   dbg_gl_call(glEnableVertexAttribArray, __FILE__, __LINE__, "glEnableVertexAttribArray", args)
 #define dglGenBuffers(args...) \
