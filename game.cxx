@@ -243,7 +243,11 @@ void Game::update() {
   glClearColor(0.12f, 0.0, 0.12f, 1.0f);
   glClearDepth(10.0f);
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_ALWAYS);
+  glDepthFunc(GL_LESS);
+  glDisable(GL_CULL_FACE);
+  glDisable(GL_SCISSOR_TEST);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   EXPR_LOG(m_main_window.get());
