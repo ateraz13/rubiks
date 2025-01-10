@@ -10,6 +10,9 @@ static bool is_glfw_initialized = false;
 static size_t system_window_count = 0;
 
 void SystemWindow::init(const SystemWindowConfig &config) {
+
+  std::cout << "Inialising system window object!\n";
+
   if (!is_glfw_initialized && !glfwInit()) {
     throw WindowingLibraryInitFailed("Failed to initialize glfw!\n");
   }
@@ -38,7 +41,7 @@ SystemWindow::~SystemWindow() {
     std::cout << "Destroying window instance!\n";
     *m_ref_count -= 1;
     if(*m_ref_count < 0) {
-      std::runtime_error("Fatal error: ref-count below zero on SystemWindow object!");
+      throw std::runtime_error("Fatal error: ref-count below zero on SystemWindow object!");
     }
     if(m_ref_count == 0) {
       std::cout << "Destroying window!\n";

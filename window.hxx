@@ -50,8 +50,9 @@ private:
   void init(const SystemWindowConfig &win);
 
   SystemWindowHandle m_win_handle = nullptr;
-  int *m_ref_count;
+  int *m_ref_count = nullptr;
   bool m_initialized = false;
+
   friend class SystemWindowBuilder;
   friend class WindowSystem;
 };
