@@ -1,6 +1,8 @@
 #include "window.hxx"
 #include "except.hxx"
 #include <GLFW/glfw3.h>
+#include "game.hxx"
+#include <optional>
 
 SystemWindow::SystemWindow() : m_win_handle(nullptr), m_ref_count(new int(0)) {}
 
@@ -27,17 +29,29 @@ void SystemWindow::init(const SystemWindowConfig &config) {
     throw SystemWindowFailedToCreate("Could not create GLFW window!\n");
   }
 
+  glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
   system_window_count += 1;
 }
 
 SystemWindow::~SystemWindow() {
   if (m_initialized) {
-    system_window_count -= 1;
-    is_glfw_initialized = false;
-    glfwDestroyWindow(m_win_handle);
-    glfwTerminate();
+    std::cout << "Destroying window instance!\n";
+    *m_ref_count -= 1;
+    if(*m_ref_count < 0) {
+      std::runtime_error("Fatal error: ref-count below zero on SystemWindow object!");
+    }
+    if(m_ref_count == 0) {
+      std::cout << "Destroying window!\n";
+      system_window_count -= 1;
+      is_glfw_initialized = false;
+      glfwDestroyWindow(m_win_handle);
+      delete m_ref_count;
+      glfwTerminate();
+    }
   }
 }
+
+void SystemWindow::swap_buffers() { glfwSwapBuffers(m_win_handle); }
 
 void SystemWindow::swap(SystemWindow &a, SystemWindow &b) {
   std::swap(a.m_initialized, b.m_initialized);
@@ -67,9 +81,7 @@ SystemWindowBuilder::SystemWindowBuilder(std::string purpose) {
   m_config.purpose = std::move(purpose);
 }
 
-SystemWindowConfig::SystemWindowConfig() {
-
-}
+SystemWindowConfig::SystemWindowConfig() {}
 
 SystemWindowBuilder &SystemWindowBuilder::with_size(int w, int h) {
   m_config.width = w;
@@ -96,11 +108,87 @@ SystemWindow SystemWindowBuilder::build() {
   return win;
 }
 
-WindowSystem::WindowSystem() {
-
-}
+WindowSystem::WindowSystem() {}
 
 WindowSystem &WindowSystem::instance() {
   static WindowSystem inst;
   return inst;
+}
+
+void WindowSystem::redirect_inputs(GLFWwindow *handle, KeyboardKey key,
+                                   int scancode, int key_state_native,
+                                   int mods) {
+
+//   auto &game = Game::instance();
+//   auto &ws = WindowSystem::instance();
+//   auto win = ws.find_system_window(handle);
+
+//   if (!win) {
+//     throw EventOnUnregisteredWindow("Event received on unregistered window."
+//                                     "The window must have been created without "
+//                                     "the acknowledment of WindowSystem.");
+//   }
+
+// #ifdef DEBUG_MESSAGES
+//   std::cout << "Event received: ";
+//   if (key == GLFW_KEY_ESCAPE) {
+//     std::cout << "ESCAPE\n";
+//   } else {
+//     std::cout << "UNKOWN KEY\n";
+//   }
+//   std::cout << std::endl;
+// #endif
+
+//   if (key_state_native == GLFW_PRESS || key_state_native == GLFW_RELEASE) {
+//     auto key_state =
+//         key_state_native == GLFW_PRESS ? KeyState::PRESSED : KeyState::RELEASED;
+//     KeyEvent ke{*win, key, key_state};
+
+//     if (auto key_bind = game.m_keymap.find(ke);
+//         key_bind != std::end(game.m_keymap)) {
+// #ifdef DEBUG_MESSAGES
+//       std::cout << "Running action!\n";
+// #endif
+//       // Run the action.
+//       (*(key_bind->second))();
+//     }
+//   }
+// }
+
+// std::optional<SystemWindow> WindowSystem::find_system_window(SystemWindowHandle handle) {
+//   for(auto w: m_system_windows) {
+//     if(w.second.m_win_handle == handle) {
+//       return w.second;
+//     }
+//   }
+
+//   return {};
+}
+
+void WindowSystem::poll_events() {
+  glfwPollEvents();
+}
+
+bool SystemWindow::operator<(const SystemWindow &other) const {
+  return m_win_handle < other.m_win_handle;
+}
+
+bool SystemWindow::operator==(const SystemWindow &other) const {
+  return m_win_handle == other.m_win_handle;
+}
+
+bool SystemWindow::operator>(const SystemWindow &other) const {
+  return m_win_handle > other.m_win_handle;
+}
+
+bool KeyEvent::operator<(const KeyEvent &other) const {
+  return window < other.window && key < other.key && state < other.state;
+}
+
+bool KeyEvent::operator==(const KeyEvent &other) const {
+  return window == other.window && key == other.key && state == other.state;
+}
+
+bool KeyEvent::operator>(const KeyEvent &other) const {
+  return window > other.window && key > other.key && state > other.state;
 }
