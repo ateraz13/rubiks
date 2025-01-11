@@ -2,6 +2,7 @@
 #define WINDOW_HXX
 #include "gl.hxx"
 #include <GLFW/glfw3.h>
+#include <functional>
 #include <glm/vec2.hpp>
 #include <map>
 #include <optional>
@@ -38,14 +39,16 @@ public:
   SystemWindow();
   ~SystemWindow();
 
+  std::function<void (SystemWindow, uint32_t, uint32_t)> resize_cb;
+
   void bind_context();
   void swap_buffers();
 
   static void swap(SystemWindow &, SystemWindow &);
 
-  bool operator<(const SystemWindow& other) const;
-  bool operator==(const SystemWindow& other) const;
-  bool operator>(const SystemWindow& other) const;
+  bool operator<(const SystemWindow &other) const;
+  bool operator==(const SystemWindow &other) const;
+  bool operator>(const SystemWindow &other) const;
 
 private:
   void init(const SystemWindowConfig &win);
@@ -96,15 +99,23 @@ public:
                               int key_state_native, int mods);
 
 
-  void register_window(std::string purpose, SystemWindow win);
-  void unregister_window(std::string purpose);
-  void purge_window(SystemWindow win);
-  void poll_events();
+  static void register_window(std::string purpose, SystemWindow win);
+  static void unregister_window(std::string purpose);
+  static void purge_window(SystemWindow win);
+  static void poll_events();
 
 private:
+
+  static void register_handle(SystemWindowHandle handle, SystemWindow window);
+
   WindowSystem();
 
+  static void window_resized_cb(GLFWwindow* win, uint32_t w, uint32_t h);
+
+  std::map<SystemWindowHandle, SystemWindow> m_sw_handle_lookup;
   std::map<std::string, SystemWindow> m_system_windows;
+
+  friend class SystemWindow;
 };
 
 enum struct KeyState { PRESSED, RELEASED };
@@ -114,10 +125,9 @@ struct KeyEvent {
   KeyboardKey key;
   KeyState state;
 
-  bool operator<(const KeyEvent& other) const;
-  bool operator==(const KeyEvent& other) const;
-  bool operator>(const KeyEvent& other) const;
+  bool operator<(const KeyEvent &other) const;
+  bool operator==(const KeyEvent &other) const;
+  bool operator>(const KeyEvent &other) const;
 };
-
 
 #endif // WINDOW_HXX

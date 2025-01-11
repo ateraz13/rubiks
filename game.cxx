@@ -74,40 +74,7 @@ void Game::init_input_system() {
 
 void Game::init_window_system() {
 
-  // if (!glfwInit()) {
-  //   throw std::runtime_error("Could not initialise GLFW!");
-  // }
-
-  // glfwSetErrorCallback(glfw_error_callback);
-
-  // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  // {
-  //   GLFWwindow *mw =
-  //       glfwCreateWindow(MAIN_WINDOW_DEFAULT_WIDTH,
-  //       MAIN_WINDOW_DEFAULT_HEIGHT,
-  //                        MAIN_WINDOW_DEFAULT_TITLE, NULL, NULL);
-
-  //   if (mw == nullptr) {
-  //     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-  //     glfwCreateWindow(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT,
-  //                      MAIN_WINDOW_DEFAULT_TITLE, NULL, NULL);
-  //     if (mw == nullptr) {
-  //       glfwTerminate();
-  //       throw std::runtime_error("Failed to create GLFW window!");
-  //     }
-  //   }
-
   //   glfwSetWindowSizeCallback(mw, main_window_resized_cb);
-  //   glfwMakeContextCurrent(mw);
-
-  //   m_main_window = std::shared_ptr<GLFWwindow>(mw, [=](GLFWwindow *win) {
-  //     std::cout << "Destoying window!\n";
-  //     glfwDestroyWindow(win);
-  //     glfwTerminate();
-  //   });
-
   m_main_window =
       WindowSystem::instance().new_window("main-window")
           .with_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT)

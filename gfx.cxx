@@ -180,9 +180,9 @@ void gfx::GPU::init() {
 
   glDebugMessageCallback(&gl_error_callback, 0);
 
-  // init_square();
+  init_square();
   init_triangle();
-  // init_cube();
+  init_cube();
 }
 
 void gfx::GPU::init_square() {
@@ -246,12 +246,12 @@ void gfx::GPU::draw() {
                      glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 mvp = projection * view * model;
 
-  // square_mesh.send_mvp(mvp);
-  // square_mesh.draw();
+  square_mesh.send_mvp(mvp);
+  square_mesh.draw();
   triangle_mesh.send_mvp(mvp);
   triangle_mesh.draw();
-  // cube_mesh.send_mvp(mvp);
-  // cube_mesh.draw();
+  cube_mesh.send_mvp(mvp);
+  cube_mesh.draw();
 }
 
 gfx::SimpleMesh::SimpleMesh() {}
@@ -301,19 +301,20 @@ void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
-  // dglBindVertexArray(m_vao);
-  // dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
-  // dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
-  //               GL_STATIC_DRAW);
-  // m_index_count = count;
-  // dglBindVertexArray(0);
+  dglBindVertexArray(m_vao);
+  dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
+  dglBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
+                GL_STATIC_DRAW);
+  m_index_count = count;
+  dglBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
-  // dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
-  dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
-  dglDrawArrays(GL_TRIANGLES, 0, 3);
+  dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
+  glDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
+  // dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
+  // dglDrawArrays(GL_TRIANGLES, 0, 3);
   dglBindVertexArray(0);
 }
 

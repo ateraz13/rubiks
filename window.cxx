@@ -39,6 +39,7 @@ void SystemWindow::clean_up() {
       system_window_count -= 1;
       is_glfw_initialized = false;
       glfwDestroyWindow(m_win_handle);
+      WindowSystem::purge_window(*this);
       delete m_ref_count;
     }
   }
@@ -101,6 +102,8 @@ void SystemWindow::init(const SystemWindowConfig &config) {
   system_window_count += 1;
   m_initialized = true;
   m_win_handle = win;
+
+  WindowSystem::register_handle(win, *this);
 }
 
 void SystemWindow::swap_buffers() {
@@ -248,22 +251,31 @@ bool KeyEvent::operator>(const KeyEvent &other) const {
 WindowSystem::~WindowSystem() { glfwTerminate(); }
 
 void WindowSystem::register_window(std::string win_purpose, SystemWindow win) {
-  m_system_windows[win_purpose] = win;
+  auto &inst = WindowSystem::instance();
+  inst.m_system_windows[win_purpose] = win;
 }
 
 void WindowSystem::unregister_window(std::string purpose) {
-  auto it = m_system_windows.find(purpose);
-  if (it != m_system_windows.end()) {
-    m_system_windows.erase(it);
+  auto &inst = WindowSystem::instance();
+  auto it = inst.m_system_windows.find(purpose);
+  if (it != inst.m_system_windows.end()) {
+    inst.m_system_windows.erase(it);
   }
 }
 
 void WindowSystem::purge_window(SystemWindow win) {
-  for (auto it = m_system_windows.begin(); it != m_system_windows.end(); ) {
+  auto &inst = WindowSystem::instance();
+  for (auto it = inst.m_system_windows.begin(); it != inst.m_system_windows.end(); ) {
     if (it->second == win) {
-      it = m_system_windows.erase(it);
+      it = inst.m_system_windows.erase(it);
     } else {
       it++;
     }
   }
+}
+
+
+void WindowSystem::window_resized_cb(GLFWwindow* win, uint32_t w, uint32_t h) {
+  auto &inst = WindowSystem::instance();
+
 }
