@@ -1,7 +1,6 @@
 #include "gfx.hxx"
 #include "game.hxx"
 #include "geom.hxx"
-#include "gl.hxx"
 #include "gl_calls.hxx"
 #include "iterator.hxx"
 #include "utility.hxx"

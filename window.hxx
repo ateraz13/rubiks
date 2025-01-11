@@ -33,7 +33,9 @@ public:
 
   SystemWindow(const SystemWindow &other);
   SystemWindow &operator=(const SystemWindow &other);
-
+  SystemWindow(SystemWindow &&other);
+  SystemWindow &operator=(SystemWindow &&other);
+  SystemWindow();
   ~SystemWindow();
 
   void bind_context();
@@ -46,8 +48,8 @@ public:
   bool operator>(const SystemWindow& other) const;
 
 private:
-  SystemWindow();
   void init(const SystemWindowConfig &win);
+  void clean_up();
 
   SystemWindowHandle m_win_handle = nullptr;
   int *m_ref_count = nullptr;
@@ -81,9 +83,10 @@ SystemWindowBuilder sys_window();
 class WindowSystem {
 public:
   std::optional<SystemWindow> find_system_window(SystemWindowHandle handle);
-  SystemWindowBuilder make(std::string window_purpose);
+  SystemWindowBuilder new_window(std::string window_purpose);
 
   static WindowSystem &instance();
+  ~WindowSystem();
 
   WindowSystem(const WindowSystem &other) = delete;
   WindowSystem &operator=(const WindowSystem &other) = delete;
@@ -92,6 +95,10 @@ public:
   static void redirect_inputs(GLFWwindow *handle, KeyboardKey key, int scancode,
                               int key_state_native, int mods);
 
+
+  void register_window(std::string purpose, SystemWindow win);
+  void unregister_window(std::string purpose);
+  void purge_window(SystemWindow win);
   void poll_events();
 
 private:

@@ -1,7 +1,6 @@
 #ifndef GFX_HXX
 #define GFX_HXX
 #include "const.hxx"
-#include "gl.hxx"
 #include "shader.hxx"
 #include <array>
 #include <glm/mat4x4.hpp>

@@ -1,17 +1,82 @@
 #include "window.hxx"
 #include "except.hxx"
-#include <GLFW/glfw3.h>
 #include "game.hxx"
+#include <GLFW/glfw3.h>
 #include <optional>
 
-SystemWindow::SystemWindow() : m_win_handle(nullptr), m_ref_count(new int(0)) {}
+static std::atomic<bool> is_glfw_initialized = false;
+static std::atomic<size_t> system_window_count = 0;
 
-static bool is_glfw_initialized = false;
-static size_t system_window_count = 0;
+SystemWindow::SystemWindow() : m_win_handle(nullptr), m_ref_count(new int(1)) {}
+
+SystemWindow::SystemWindow(SystemWindow &&other)
+    : m_win_handle(other.m_win_handle), m_ref_count(other.m_ref_count),
+      m_initialized(other.m_initialized) {
+  std::cout << "Move construting system window!\n" << std::endl;
+
+  clean_up();
+
+  m_win_handle = other.m_win_handle;
+  m_initialized = other.m_initialized;
+  m_ref_count = other.m_ref_count;
+
+  other.m_win_handle = nullptr;
+  other.m_initialized = false;
+  other.m_ref_count = nullptr;
+}
+
+SystemWindow::~SystemWindow() { clean_up(); }
+
+void SystemWindow::clean_up() {
+  if (m_initialized) {
+    std::cout << "Destroying window instance!\n";
+    *m_ref_count -= 1;
+    if (*m_ref_count < 0) {
+      std::cout << "SystemWindow: ref count below zero!\n";
+    }
+    if (m_ref_count == 0) {
+      std::cout << "Destroying window!\n";
+      system_window_count -= 1;
+      is_glfw_initialized = false;
+      glfwDestroyWindow(m_win_handle);
+      delete m_ref_count;
+    }
+  }
+}
+
+SystemWindow &SystemWindow::operator=(SystemWindow &&other) {
+  std::cout << "Move assigning system window!\n" << std::endl;
+
+  clean_up();
+
+  m_win_handle = other.m_win_handle;
+  m_initialized = other.m_initialized;
+  m_ref_count = other.m_ref_count;
+
+  other.m_win_handle = nullptr;
+  other.m_initialized = false;
+  other.m_ref_count = nullptr;
+
+  return *this;
+}
+
+SystemWindow::SystemWindow(const SystemWindow &other) {
+  std::cout << "Copying instance of system window\n!" << std::endl;
+  m_win_handle = other.m_win_handle;
+  m_ref_count = other.m_ref_count;
+  *m_ref_count += 1;
+}
+
+SystemWindow &SystemWindow::operator=(const SystemWindow &other) {
+  std::cout << "Copy assining of system window\n!";
+  auto tmp = SystemWindow(other);
+  std::swap(tmp, *this);
+  return *this;
+}
 
 void SystemWindow::init(const SystemWindowConfig &config) {
 
-  std::cout << "Inialising system window object!\n";
+  std::cout << "Inialising system window object!\n" << std::endl;
 
   if (!is_glfw_initialized && !glfwInit()) {
     throw WindowingLibraryInitFailed("Failed to initialize glfw!\n");
@@ -34,27 +99,14 @@ void SystemWindow::init(const SystemWindowConfig &config) {
 
   glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
   system_window_count += 1;
+  m_initialized = true;
+  m_win_handle = win;
 }
 
-SystemWindow::~SystemWindow() {
-  if (m_initialized) {
-    std::cout << "Destroying window instance!\n";
-    *m_ref_count -= 1;
-    if(*m_ref_count < 0) {
-      throw std::runtime_error("Fatal error: ref-count below zero on SystemWindow object!");
-    }
-    if(m_ref_count == 0) {
-      std::cout << "Destroying window!\n";
-      system_window_count -= 1;
-      is_glfw_initialized = false;
-      glfwDestroyWindow(m_win_handle);
-      delete m_ref_count;
-      glfwTerminate();
-    }
-  }
+void SystemWindow::swap_buffers() {
+  std::cout << "win_handle: " << m_win_handle << "\n";
+  glfwSwapBuffers(m_win_handle);
 }
-
-void SystemWindow::swap_buffers() { glfwSwapBuffers(m_win_handle); }
 
 void SystemWindow::swap(SystemWindow &a, SystemWindow &b) {
   std::swap(a.m_initialized, b.m_initialized);
@@ -62,21 +114,9 @@ void SystemWindow::swap(SystemWindow &a, SystemWindow &b) {
   std::swap(a.m_win_handle, b.m_win_handle);
 }
 
-SystemWindow::SystemWindow(const SystemWindow &other) {
-  m_win_handle = other.m_win_handle;
-  m_ref_count = other.m_ref_count;
-  *m_ref_count += 1;
-}
-
-SystemWindow &SystemWindow::operator=(const SystemWindow &other) {
-  auto tmp = SystemWindow(other);
-  std::swap(tmp, *this);
-  return *this;
-}
-
 void SystemWindow::bind_context() { glfwMakeContextCurrent(m_win_handle); }
 
-SystemWindowBuilder WindowSystem::make(std::string window_purpose) {
+SystemWindowBuilder WindowSystem::new_window(std::string window_purpose) {
   return SystemWindowBuilder(std::move(window_purpose));
 }
 
@@ -108,7 +148,9 @@ SystemWindowBuilder &SystemWindowBuilder::with_title(const std::string &title) {
 SystemWindow SystemWindowBuilder::build() {
   auto win = SystemWindow();
   win.init(m_config);
-  return win;
+  WindowSystem::instance().register_window(m_config.purpose, win);
+  std::cout << "I built the thing damn it!\n";
+  return std::move(win);
 }
 
 WindowSystem::WindowSystem() {}
@@ -122,65 +164,72 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, KeyboardKey key,
                                    int scancode, int key_state_native,
                                    int mods) {
 
-//   auto &game = Game::instance();
-//   auto &ws = WindowSystem::instance();
-//   auto win = ws.find_system_window(handle);
+  auto &game = Game::instance();
+  auto &ws = WindowSystem::instance();
+  auto win = ws.find_system_window(handle);
 
-//   if (!win) {
-//     throw EventOnUnregisteredWindow("Event received on unregistered window."
-//                                     "The window must have been created without "
-//                                     "the acknowledment of WindowSystem.");
-//   }
+  if (!win) {
+    throw EventOnUnregisteredWindow("Event received on unregistered window."
+                                    "The window must have been created without "
+                                    "the acknowledment of WindowSystem.");
+  }
 
-// #ifdef DEBUG_MESSAGES
-//   std::cout << "Event received: ";
-//   if (key == GLFW_KEY_ESCAPE) {
-//     std::cout << "ESCAPE\n";
-//   } else {
-//     std::cout << "UNKOWN KEY\n";
-//   }
-//   std::cout << std::endl;
-// #endif
+#ifdef DEBUG_MESSAGES
+  std::cout << "Event received: ";
+  if (key == GLFW_KEY_ESCAPE) {
+    std::cout << "ESCAPE\n";
+  } else {
+    std::cout << "UNKOWN KEY\n";
+  }
+  std::cout << std::endl;
+#endif
 
-//   if (key_state_native == GLFW_PRESS || key_state_native == GLFW_RELEASE) {
-//     auto key_state =
-//         key_state_native == GLFW_PRESS ? KeyState::PRESSED : KeyState::RELEASED;
-//     KeyEvent ke{*win, key, key_state};
+  if (key_state_native == GLFW_PRESS || key_state_native == GLFW_RELEASE) {
+    auto key_state =
+        key_state_native == GLFW_PRESS ? KeyState::PRESSED : KeyState::RELEASED;
+    KeyEvent ke{*win, key, key_state};
 
-//     if (auto key_bind = game.m_keymap.find(ke);
-//         key_bind != std::end(game.m_keymap)) {
-// #ifdef DEBUG_MESSAGES
-//       std::cout << "Running action!\n";
-// #endif
-//       // Run the action.
-//       (*(key_bind->second))();
-//     }
-//   }
-// }
-
-// std::optional<SystemWindow> WindowSystem::find_system_window(SystemWindowHandle handle) {
-//   for(auto w: m_system_windows) {
-//     if(w.second.m_win_handle == handle) {
-//       return w.second;
-//     }
-//   }
-
-//   return {};
+    if (auto key_bind = game.m_keymap.find(ke);
+        key_bind != std::end(game.m_keymap)) {
+#ifdef DEBUG_MESSAGES
+      std::cout << "Running action!\n";
+#endif
+      // Run the action.
+      (*(key_bind->second))();
+    }
+  }
 }
 
-void WindowSystem::poll_events() {
-  glfwPollEvents();
+std::optional<SystemWindow>
+WindowSystem::find_system_window(SystemWindowHandle handle) {
+  for (auto w : m_system_windows) {
+    if (w.second.m_win_handle == handle) {
+      return w.second;
+    }
+  }
+  return {};
 }
+
+void WindowSystem::poll_events() { glfwPollEvents(); }
 
 bool SystemWindow::operator<(const SystemWindow &other) const {
+  if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+    std::cout << "WARNING: SystemWindow with multiple ref conters!";
+  }
   return m_win_handle < other.m_win_handle;
 }
 
 bool SystemWindow::operator==(const SystemWindow &other) const {
+  if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+    std::cout << "WARNING: SystemWindow with multiple ref conters!";
+  }
   return m_win_handle == other.m_win_handle;
 }
 
 bool SystemWindow::operator>(const SystemWindow &other) const {
+  if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+    std::cout << "WARNING: SystemWindow with multiple ref conters!";
+  }
   return m_win_handle > other.m_win_handle;
 }
 
@@ -194,4 +243,27 @@ bool KeyEvent::operator==(const KeyEvent &other) const {
 
 bool KeyEvent::operator>(const KeyEvent &other) const {
   return window > other.window && key > other.key && state > other.state;
+}
+
+WindowSystem::~WindowSystem() { glfwTerminate(); }
+
+void WindowSystem::register_window(std::string win_purpose, SystemWindow win) {
+  m_system_windows[win_purpose] = win;
+}
+
+void WindowSystem::unregister_window(std::string purpose) {
+  auto it = m_system_windows.find(purpose);
+  if (it != m_system_windows.end()) {
+    m_system_windows.erase(it);
+  }
+}
+
+void WindowSystem::purge_window(SystemWindow win) {
+  for (auto it = m_system_windows.begin(); it != m_system_windows.end(); ) {
+    if (it->second == win) {
+      it = m_system_windows.erase(it);
+    } else {
+      it++;
+    }
+  }
 }
