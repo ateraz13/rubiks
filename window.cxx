@@ -274,6 +274,11 @@ void WindowSystem::purge_window(SystemWindow win) {
 }
 
 
+void WindowSystem::register_handle(SystemWindowHandle handle, SystemWindow win) {
+  auto inst = WindowSystem::instance();
+  inst.m_sw_handle_lookup[handle] = win;
+}
+
 void WindowSystem::window_resized_cb(GLFWwindow* win, uint32_t w, uint32_t h) {
   auto &inst = WindowSystem::instance();
 

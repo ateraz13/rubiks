@@ -179,7 +179,7 @@ void Game::update() {
   glDepthFunc(GL_LESS);
   glDisable(GL_CULL_FACE);
   glDisable(GL_SCISSOR_TEST);
-  glCullFace(GL_BACK);
+  // glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
