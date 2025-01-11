@@ -39,7 +39,6 @@ void SystemWindow::clean_up() {
       system_window_count -= 1;
       is_glfw_initialized = false;
       glfwDestroyWindow(m_win_handle);
-      WindowSystem::purge_window(*this);
       delete m_ref_count;
     }
   }
