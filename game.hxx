@@ -52,7 +52,7 @@ public:
   void start();
   void update();
   void stop();
-  void acknowledge_main_window_resize(int new_width, int new_height);
+  static void acknowledge_main_window_resize(SystemWindow win, int new_width, int new_height);
 
   void save(const std::string &name);
   double get_current_time() const;

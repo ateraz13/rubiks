@@ -2,6 +2,7 @@
 #include "except.hxx"
 #include "gl_calls.hxx"
 #include "utility.hxx"
+#include <functional>
 #include "window.hxx"
 #include <GLFW/glfw3.h>
 #include <chrono>
@@ -44,16 +45,12 @@ Game::~Game() {
   // save("before_exit_autosave");
 }
 
-void main_window_resized_cb(GLFWwindow *window, int width, int height) {
+void Game::acknowledge_main_window_resize(SystemWindow win, int width, int height) {
   auto &inst = Game::instance();
-  inst.acknowledge_main_window_resize(width, height);
-}
-
-void Game::acknowledge_main_window_resize(int width, int height) {
   std::cout << "Window resized: width = " << width << ", height = " << height
             << "\n";
-  m_main_window->bind_context();
-  m_gfx.viewport_size(width, height);
+  win.bind_context();
+  inst.m_gfx.viewport_size(width, height);
 }
 
 void QuitAction::operator()() { Game::instance().stop(); }
@@ -62,7 +59,6 @@ void Game::init_input_system() {
 
   // FIXME: Make sure the input_handler is never called by GLFW after Game has
   // been freed.
-
   auto key_event =
       KeyEvent{*m_main_window, GLFW_KEY_ESCAPE, KeyState::RELEASED};
   m_keymap[key_event] = std::make_unique<QuitAction>();
@@ -82,6 +78,8 @@ void Game::init_window_system() {
           .with_opengl(4, 5)
           .build();
 
+  using namespace std::placeholders;
+  m_main_window->resize_cb = Game::acknowledge_main_window_resize;
   m_main_window->bind_context();
 
   load_opengl_funcs(&glfwGetProcAddress);
@@ -252,3 +250,4 @@ void RubiksCube::rotate_3rd_row_backwards() {
 void RubiksCube::reset() { std::cout << "reset" << std::endl; }
 
 double Game::current_time() const { return m_current_time; }
+

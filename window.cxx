@@ -196,6 +196,7 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, KeyboardKey key,
 #ifdef DEBUG_MESSAGES
       std::cout << "Running action!\n";
 #endif
+      std::cout << "Key bind: " << key_bind->first.key << std::endl;
       // Run the action.
       (*(key_bind->second))();
     }
@@ -204,10 +205,9 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, KeyboardKey key,
 
 std::optional<SystemWindow>
 WindowSystem::find_system_window(SystemWindowHandle handle) {
-  for (auto w : m_system_windows) {
-    if (w.second.m_win_handle == handle) {
-      return w.second;
-    }
+  if(auto win = m_sw_handle_lookup.find(handle);
+     win != m_sw_handle_lookup.end()) {
+    return win->second;
   }
   return {};
 }
@@ -223,14 +223,14 @@ bool SystemWindow::operator<(const SystemWindow &other) const {
 
 bool SystemWindow::operator==(const SystemWindow &other) const {
   if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
-    std::cout << "WARNING: SystemWindow with multiple ref conters!";
+    std::cout << "WARNING: SystemWindow with multiple counters!";
   }
   return m_win_handle == other.m_win_handle;
 }
 
 bool SystemWindow::operator>(const SystemWindow &other) const {
   if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
-    std::cout << "WARNING: SystemWindow with multiple ref conters!";
+    std::cout << "WARNING: SystemWindow with multiple counters!";
   }
   return m_win_handle > other.m_win_handle;
 }
@@ -273,13 +273,25 @@ void WindowSystem::purge_window(SystemWindow win) {
   }
 }
 
-
 void WindowSystem::register_handle(SystemWindowHandle handle, SystemWindow win) {
-  auto inst = WindowSystem::instance();
+  auto &inst = WindowSystem::instance();
   inst.m_sw_handle_lookup[handle] = win;
 }
 
-void WindowSystem::window_resized_cb(GLFWwindow* win, uint32_t w, uint32_t h) {
+void WindowSystem::window_resized_cb(SystemWindowHandle handle, uint32_t w, uint32_t h) {
   auto &inst = WindowSystem::instance();
+  auto it = inst.m_sw_handle_lookup.find(handle);
+  if(it != inst.m_sw_handle_lookup.end()) {
+    it->second.resize_cb(it->second, w, h);
+  }
+}
 
+void SystemWindow::ResizeCB::operator()(SystemWindow win, uint32_t width, uint32_t height) {
+  if(m_resize_cb) {
+    m_resize_cb(win, width, height);
+  }
+}
+
+void SystemWindow::ResizeCB::operator=(SystemWindow::ResizeCB::CBfunc func) {
+  m_resize_cb = func;
 }

@@ -39,7 +39,15 @@ public:
   SystemWindow();
   ~SystemWindow();
 
-  std::function<void (SystemWindow, uint32_t, uint32_t)> resize_cb;
+  struct ResizeCB {
+  public:
+    using CBfunc = std::function<void(SystemWindow, uint32_t, uint32_t)>;
+
+    void operator=(CBfunc cb);
+    void operator()(SystemWindow win, uint32_t width, uint32_t height);
+
+    private : CBfunc m_resize_cb;
+  } resize_cb;
 
   void bind_context();
   void swap_buffers();
@@ -98,19 +106,17 @@ public:
   static void redirect_inputs(GLFWwindow *handle, KeyboardKey key, int scancode,
                               int key_state_native, int mods);
 
-
   static void register_window(std::string purpose, SystemWindow win);
   static void unregister_window(std::string purpose);
   static void purge_window(SystemWindow win);
   static void poll_events();
 
 private:
-
   static void register_handle(SystemWindowHandle handle, SystemWindow window);
 
   WindowSystem();
 
-  static void window_resized_cb(GLFWwindow* win, uint32_t w, uint32_t h);
+  static void window_resized_cb(GLFWwindow *win, uint32_t w, uint32_t h);
 
   std::map<SystemWindowHandle, SystemWindow> m_sw_handle_lookup;
   std::map<std::string, SystemWindow> m_system_windows;
