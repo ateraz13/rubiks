@@ -137,13 +137,10 @@ std::ostream &operator<<(std::ostream &strm, KeyCode keycode) {
   return strm;
 }
 
-std::strong_ordering KeyCode::operator<=>(const KeyCode &other) {
+std::strong_ordering KeyCode::operator<=>(KeyCode other) const {
   return value <=> other.value;
 }
 
-bool KeyCode::operator>(const KeyCode &other) { return value > other.value; }
-bool KeyCode::operator<(const KeyCode &other) { return value < other.value; }
-bool KeyCode::operator==(const KeyCode &other) { return value == other.value; }
 bool KeyCode::operator>(KeyCode other) const { return value > other.value; }
 bool KeyCode::operator<(KeyCode other) const { return value < other.value; }
-bool KeyCode::operator==( KeyCode other) const { return value == other.value; }
+bool KeyCode::operator==(KeyCode other) const { return value == other.value; }

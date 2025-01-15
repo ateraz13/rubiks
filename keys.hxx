@@ -5,11 +5,8 @@
 #include <ostream>
 
 struct KeyCode {
-  uint32_t value;
-  std::strong_ordering operator<=>(const KeyCode &other);
-  bool operator>(const KeyCode &other);
-  bool operator<(const KeyCode &other);
-  bool operator==(const KeyCode &other);
+  int value;
+  std::strong_ordering operator<=>(KeyCode other) const;
   bool operator>(KeyCode other) const;
   bool operator<(KeyCode other) const;
   bool operator==(KeyCode other) const;

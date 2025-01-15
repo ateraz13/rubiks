@@ -162,9 +162,11 @@ WindowSystem &WindowSystem::instance() {
   return inst;
 }
 
-void WindowSystem::redirect_inputs(GLFWwindow *handle, KeyboardKey key,
+void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
                                    int scancode, int key_state_native,
                                    int mods) {
+
+  KeyCode key{keycode};
 
   auto &game = Game::instance();
   auto &ws = WindowSystem::instance();
@@ -205,8 +207,8 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, KeyboardKey key,
 
 std::optional<SystemWindow>
 WindowSystem::find_system_window(SystemWindowHandle handle) {
-  if(auto win = m_sw_handle_lookup.find(handle);
-     win != m_sw_handle_lookup.end()) {
+  if (auto win = m_sw_handle_lookup.find(handle);
+      win != m_sw_handle_lookup.end()) {
     return win->second;
   }
   return {};
@@ -215,21 +217,21 @@ WindowSystem::find_system_window(SystemWindowHandle handle) {
 void WindowSystem::poll_events() { glfwPollEvents(); }
 
 bool SystemWindow::operator<(const SystemWindow &other) const {
-  if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+  if (other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
     std::cout << "WARNING: SystemWindow with multiple ref conters!";
   }
   return m_win_handle < other.m_win_handle;
 }
 
 bool SystemWindow::operator==(const SystemWindow &other) const {
-  if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+  if (other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
     std::cout << "WARNING: SystemWindow with multiple counters!";
   }
   return m_win_handle == other.m_win_handle;
 }
 
 bool SystemWindow::operator>(const SystemWindow &other) const {
-  if(other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+  if (other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
     std::cout << "WARNING: SystemWindow with multiple counters!";
   }
   return m_win_handle > other.m_win_handle;
@@ -264,7 +266,8 @@ void WindowSystem::unregister_window(std::string purpose) {
 
 void WindowSystem::purge_window(SystemWindow win) {
   auto &inst = WindowSystem::instance();
-  for (auto it = inst.m_system_windows.begin(); it != inst.m_system_windows.end(); ) {
+  for (auto it = inst.m_system_windows.begin();
+       it != inst.m_system_windows.end();) {
     if (it->second == win) {
       it = inst.m_system_windows.erase(it);
     } else {
@@ -273,21 +276,24 @@ void WindowSystem::purge_window(SystemWindow win) {
   }
 }
 
-void WindowSystem::register_handle(SystemWindowHandle handle, SystemWindow win) {
+void WindowSystem::register_handle(SystemWindowHandle handle,
+                                   SystemWindow win) {
   auto &inst = WindowSystem::instance();
   inst.m_sw_handle_lookup[handle] = win;
 }
 
-void WindowSystem::window_resized_cb(SystemWindowHandle handle, uint32_t w, uint32_t h) {
+void WindowSystem::window_resized_cb(SystemWindowHandle handle, uint32_t w,
+                                     uint32_t h) {
   auto &inst = WindowSystem::instance();
   auto it = inst.m_sw_handle_lookup.find(handle);
-  if(it != inst.m_sw_handle_lookup.end()) {
+  if (it != inst.m_sw_handle_lookup.end()) {
     it->second.resize_cb(it->second, w, h);
   }
 }
 
-void SystemWindow::ResizeCB::operator()(SystemWindow win, uint32_t width, uint32_t height) {
-  if(m_resize_cb) {
+void SystemWindow::ResizeCB::operator()(SystemWindow win, uint32_t width,
+                                        uint32_t height) {
+  if (m_resize_cb) {
     m_resize_cb(win, width, height);
   }
 }

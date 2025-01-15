@@ -8,9 +8,10 @@
 #include <optional>
 #include <string>
 #include <tuple>
+#include "keys.hxx"
 
 using SystemWindowHandle = GLFWwindow *;
-using KeyboardKey = int;
+using KeyboardKey = KeyCode;
 
 struct SystemWindowConfig {
 public:
@@ -103,7 +104,7 @@ public:
   WindowSystem &operator=(const WindowSystem &other) = delete;
   WindowSystem(WindowSystem &&other) = delete;
 
-  static void redirect_inputs(GLFWwindow *handle, KeyboardKey key, int scancode,
+  static void redirect_inputs(GLFWwindow *handle, int keycode, int scancode,
                               int key_state_native, int mods);
 
   static void register_window(std::string purpose, SystemWindow win);
