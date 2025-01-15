@@ -174,32 +174,11 @@ void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id,
             << "\tMessage: " << message << std::endl;
 }
 
-GLuint vbo = 0;
-GLuint vao = 0;
-
-GLfloat mesh_vertices[3*3] = {
-    0.0f, 1.0f, 0.0f,
-    1.0f, -1.0f, 0.0f,
-    -1.0f, -1.0f, 0.0f
-};
-
-GLushort mesh_indices[3] = {
-   0, 1, 2
-};
 
 void gfx::GPU::init() {
 
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(&gl_error_callback, 0);
-
-  // glGenBuffers(1, &vbo);
-  // glGenVertexArrays(1, &vao);
-  // glBindVertexArray(vao);
-  // glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  // glBufferData(GL_ARRAY_BUFFER, sizeof(mesh_vertices), mesh_vertices, GL_STATIC_DRAW);
-  // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-  // glEnableVertexAttribArray(0);
-
 
   init_square();
   init_triangle();
@@ -266,9 +245,6 @@ void gfx::GPU::draw() {
   view = glm::rotate(view, static_cast<float>(glm::pi<double>() * time),
                      glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 mvp = projection * view * model;
-
-  glEnableVertexAttribArray(0);
-  glDrawArrays(GL_TRIANGLES, 0, 3);
 
   square_mesh.send_mvp(mvp);
   square_mesh.draw();
