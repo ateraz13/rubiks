@@ -188,7 +188,7 @@ void Game::update() {
   using namespace std::chrono_literals;
   using std::chrono::duration;
 
-  auto framerate = 2;
+  auto framerate = 60;
 
   auto elapsed_duration =
       duration_cast<milliseconds>(milliseconds(1000 / framerate) -

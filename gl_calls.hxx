@@ -43,27 +43,87 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
    }
 }
 #endif //GL_CALLS_HXX
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglBindBuffer(args...) \
   dbg_gl_call(glBindBuffer, __FILE__, __LINE__, "glBindBuffer", args)
+#else 
+#define dglBindBuffer(args...) \
+  glBindBuffer(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglBindVertexArray(args...) \
   dbg_gl_call(glBindVertexArray, __FILE__, __LINE__, "glBindVertexArray", args)
+#else 
+#define dglBindVertexArray(args...) \
+  glBindVertexArray(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglBufferData(args...) \
   dbg_gl_call(glBufferData, __FILE__, __LINE__, "glBufferData", args)
+#else 
+#define dglBufferData(args...) \
+  glBufferData(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglDeleteBuffers(args...) \
   dbg_gl_call(glDeleteBuffers, __FILE__, __LINE__, "glDeleteBuffers", args)
+#else 
+#define dglDeleteBuffers(args...) \
+  glDeleteBuffers(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglDeleteVertexArrays(args...) \
   dbg_gl_call(glDeleteVertexArrays, __FILE__, __LINE__, "glDeleteVertexArrays", args)
+#else 
+#define dglDeleteVertexArrays(args...) \
+  glDeleteVertexArrays(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglDrawArrays(args...) \
   dbg_gl_call(glDrawArrays, __FILE__, __LINE__, "glDrawArrays", args)
+#else 
+#define dglDrawArrays(args...) \
+  glDrawArrays(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglEnableVertexAttribArray(args...) \
   dbg_gl_call(glEnableVertexAttribArray, __FILE__, __LINE__, "glEnableVertexAttribArray", args)
+#else 
+#define dglEnableVertexAttribArray(args...) \
+  glEnableVertexAttribArray(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglGenBuffers(args...) \
   dbg_gl_call(glGenBuffers, __FILE__, __LINE__, "glGenBuffers", args)
+#else 
+#define dglGenBuffers(args...) \
+  glGenBuffers(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglGenVertexArrays(args...) \
   dbg_gl_call(glGenVertexArrays, __FILE__, __LINE__, "glGenVertexArrays", args)
+#else 
+#define dglGenVertexArrays(args...) \
+  glGenVertexArrays(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglUseProgram(args...) \
   dbg_gl_call(glUseProgram, __FILE__, __LINE__, "glUseProgram", args)
+#else 
+#define dglUseProgram(args...) \
+  glUseProgram(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglVertexAttribPointer(args...) \
   dbg_gl_call(glVertexAttribPointer, __FILE__, __LINE__, "glVertexAttribPointer", args)
+#else 
+#define dglVertexAttribPointer(args...) \
+  glVertexAttribPointer(args)
+#endif //ULTRA_GL_DEBUG_INFO
+#ifdef ULTRA_GL_DEBUG_INFO
 #define dglViewport(args...) \
   dbg_gl_call(glViewport, __FILE__, __LINE__, "glViewport", args)
+#else 
+#define dglViewport(args...) \
+  glViewport(args)
+#endif //ULTRA_GL_DEBUG_INFO

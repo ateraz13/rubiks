@@ -67,10 +67,14 @@ EOF
 
 cat ${input_files} | awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }"  | grep -v glfw | grep -v glew | sort | uniq |
 while read -r func_name ; do
+    echo "#ifdef ULTRA_GL_DEBUG_INFO" >> "$output_header"
     echo "#define d$func_name(args...) \\" >> "$output_header"
     echo "  dbg_gl_call($func_name, __FILE__, __LINE__, \"$func_name\", args)" >> "$output_header"
+    echo "#else " >> "$output_header"
+    echo "#define d$func_name(args...) \\" >> "$output_header"
+    echo "  $func_name(args)" >> "$output_header"
+    echo "#endif //ULTRA_GL_DEBUG_INFO" >> "$output_header"
 done
-
 {
 cat <<EOF
 #include "$output_header"
