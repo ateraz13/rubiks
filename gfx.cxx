@@ -213,14 +213,14 @@ void gfx::GPU::init_cube() {
   cube_mesh.init();
   cube_mesh.send_position_data(&geom::cube_vertices[0],
                                geom::cube_vertices.size());
-  const std::array<glm::vec4, 8> cube_colors = {{{1.0, 1.0, 1.0, 1.0},
-                                                 {1.0, 1.0, 1.0, 1.0},
-                                                 {1.0, 1.0, 1.0, 1.0},
-                                                 {1.0, 1.0, 1.0, 1.0},
-                                                 {1.0, 1.0, 1.0, 1.0},
-                                                 {1.0, 1.0, 1.0, 1.0},
-                                                 {1.0, 1.0, 1.0, 1.0},
-                                                 {1.0, 1.0, 1.0, 1.0}}};
+  const std::array<glm::vec4, 8> cube_colors = {{{0.1, 1.0, 1.0, 1.0},
+                                                 {0.2, 1.0, 1.0, 1.0},
+                                                 {0.3, 1.0, 1.0, 1.0},
+                                                 {0.4, 1.0, 1.0, 1.0},
+                                                 {0.5, 1.0, 1.0, 1.0},
+                                                 {0.6, 1.0, 1.0, 1.0},
+                                                 {0.7, 1.0, 1.0, 1.0},
+                                                 {0.8, 1.0, 1.0, 1.0}}};
 
   cube_mesh.send_color_data(&cube_colors[0], cube_colors.size());
   cube_mesh.send_index_data(&geom::cube_indices[0], geom::cube_indices.size());
@@ -246,10 +246,10 @@ void gfx::GPU::draw() {
                      glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 mvp = projection * view * model;
 
-  square_mesh.send_mvp(mvp);
-  square_mesh.draw();
-  triangle_mesh.send_mvp(mvp);
-  triangle_mesh.draw();
+  // square_mesh.send_mvp(mvp);
+  // square_mesh.draw();
+  // triangle_mesh.send_mvp(mvp);
+  // triangle_mesh.draw();
   cube_mesh.send_mvp(mvp);
   cube_mesh.draw();
 }
