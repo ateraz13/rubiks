@@ -10,6 +10,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/scalar_constants.hpp>
+#include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <iostream>
 #include <sstream>
@@ -28,7 +29,7 @@ const char *gl_error_string(GLuint err) {
     break;
   case GL_INVALID_VALUE:
     return "A numeric argument is out of range. The offending command is "
-      "ignored and has no other side effect than to set the error flag.";
+           "ignored and has no other side effect than to set the error flag.";
     break;
   case GL_INVALID_OPERATION:
     return "The specified operation is not allowed in the current state. "
@@ -66,9 +67,7 @@ void postcall_callback(const char *source_file, int line_num,
 
   auto err = glGetError();
 
-
   std::cout << gl_error_string(err) << "\n";
-
 }
 
 void ITER_LOG_INNER(auto container) {
@@ -174,7 +173,6 @@ void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id,
             << "\tMessage: " << message << std::endl;
 }
 
-
 void gfx::GPU::init() {
 
   glEnable(GL_DEBUG_OUTPUT);
@@ -211,19 +209,71 @@ void gfx::GPU::init_triangle() {
 
 void gfx::GPU::init_cube() {
   cube_mesh.init();
-  cube_mesh.send_position_data(&geom::cube_vertices[0],
-                               geom::cube_vertices.size());
-  const std::array<glm::vec4, 8> cube_colors = {{{0.1, 1.0, 1.0, 1.0},
-                                                 {0.2, 1.0, 1.0, 1.0},
-                                                 {0.3, 1.0, 1.0, 1.0},
-                                                 {0.4, 1.0, 1.0, 1.0},
-                                                 {0.5, 1.0, 1.0, 1.0},
-                                                 {0.6, 1.0, 1.0, 1.0},
-                                                 {0.7, 1.0, 1.0, 1.0},
-                                                 {0.8, 1.0, 1.0, 1.0}}};
 
-  cube_mesh.send_color_data(&cube_colors[0], cube_colors.size());
-  cube_mesh.send_index_data(&geom::cube_indices[0], geom::cube_indices.size());
+  std::vector<glm::vec3> vertices = {};
+  std::vector<glm::vec3> normals = {};
+  std::vector<glm::vec4> colors = {};
+  std::vector<uint16_t> indices = {};
+  vertices.reserve(geom::cube_vertices.size() * 6);
+  normals.reserve(geom::cube_vertices.size() * 6);
+  colors.reserve(geom::cube_vertices.size() * 6);
+
+  const auto up = glm::vec3(0.0f, 1.0f, 0.0f);
+  const auto down = glm::vec3(0.0f, -1.0f, 0.0f);
+  const auto left = glm::vec3(-1.0f, 0.0f, 0.0f);
+  const auto right = glm::vec3(1.0f, 0.0f, 0.0f);
+  const auto forward = glm::vec3(1.0f, 0.0f, -1.0f);
+  const auto back = glm::vec3(0.0f, 0.0f, 1.0f);
+  const glm::vec4 red = {1.0f, 0.0f, 0.0f, 1.0f};
+  const glm::vec4 green = {0.0f, 1.0f, 0.0f, 1.0f};
+  const glm::vec4 blue = {0.0f, 0.0f, 1.0f, 1.0f};
+  const glm::vec4 yellow = {0.5f, 1.0f, 0.0f, 1.0f};
+  const glm::vec4 orange = {1.0f, 1.0f, 0.0f, 1.0f};
+  const glm::vec4 white = {1.0f, 1.0f, 1.0f, 1.0f};
+
+  std::array<glm::vec3, 6> directions = {up, down, left, right, forward, back};
+
+  std::array<glm::vec4, 6> pallete = {red, green, blue, yellow, orange, white};
+
+  for (auto i = 0; i < (geom::cube_indices.size() - 3); i += 3) {
+    auto index1 = geom::cube_indices[i];
+    auto index2 = geom::cube_indices[i + 1];
+    auto index3 = geom::cube_indices[i + 2];
+    auto vertex1 = geom::cube_vertices[index1];
+    auto vertex2 = geom::cube_vertices[index2];
+    auto vertex3 = geom::cube_vertices[index3];
+
+    auto tangent = glm::normalize(vertex2 - vertex1);
+    auto bitangent = glm::normalize(vertex3 - vertex1);
+
+    auto normal = glm::normalize(glm::cross(tangent, bitangent));
+
+    normals.push_back(normal);
+    vertices.push_back(vertex1);
+    vertices.push_back(vertex2);
+    vertices.push_back(vertex3);
+
+    for (int i = 0; i < directions.size(); i++) {
+      auto dir = directions[i];
+      if (glm::dot(dir, normal) > 0.5) {
+        for(int n = 0; n < 3; n++ ) {
+          colors.push_back(pallete[i]);
+        }
+        break;
+      }
+    }
+
+    indices.push_back(i);
+    indices.push_back(i + 1);
+    indices.push_back(i + 2);
+  }
+
+  cube_mesh.send_position_data(&vertices[0], vertices.size());
+  // const std::array<glm::vec4, 8> cube_colors = {
+  //     {green, green, blue, blue, red, red, yellow, yellow}};
+
+  cube_mesh.send_color_data(&colors[0], colors.size());
+  cube_mesh.send_index_data(&indices[0], indices.size());
 }
 
 void gfx::Graphics::draw() {
@@ -277,9 +327,6 @@ void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
   dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
   dglBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
-  for (auto p = data; p < data + count; p++) {
-    std::cout << "{" << p->x << ", " << p->y << ", " << p->z << "}\n";
-  }
   dglEnableVertexAttribArray(attrib_id(AttribType::POSITION));
   EXPR_LOG(buffer_id(BufferType::POSITION));
   dglVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE,
@@ -313,8 +360,6 @@ void gfx::SimpleMesh::draw() {
   dglBindVertexArray(m_vao);
   dglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
   glDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
-  // dglBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
-  // dglDrawArrays(GL_TRIANGLES, 0, 3);
   dglBindVertexArray(0);
 }
 

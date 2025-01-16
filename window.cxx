@@ -106,7 +106,7 @@ void SystemWindow::init(const SystemWindowConfig &config) {
 }
 
 void SystemWindow::swap_buffers() {
-  std::cout << "win_handle: " << m_win_handle << "\n";
+  // std::cout << "win_handle: " << m_win_handle << "\n";
   glfwSwapBuffers(m_win_handle);
 }
 
