@@ -240,8 +240,8 @@ void gfx::GPU::init_cube() {
   glm::vec3 default_normal = {0.0f, 0.0f, -1.0f};
 
   std::vector<glm::vec3> frame_vertices = {
-      {-0.5f, -0.5f, 0.0f},
-      {0.5f, -0.5f, 0.0f},
+      {-0.5f, -0.5f, -0.5f},
+      {0.5f, -0.5f, -0.5f},
   };
 
   std::vector<uint16_t> frame_indices = {0, 2, 1, 1, 2, 3};
@@ -257,21 +257,75 @@ void gfx::GPU::init_cube() {
     frame_vertices.push_back(frame_vertices[1] + v + -h);
   }
 
-   auto i = 0;
-  for (int n = 0; n < 4; n++) {
-    for (auto fi : frame_indices) {
-      auto v = glm::rotate(glm::mat4(1.0f), n * glm::radians(90.0f),
-                           glm::vec3(0.0f, 0.0f, 1.0f)) *
-               glm::vec4(frame_vertices[fi], 1.0f);
-      vertices.push_back(glm::vec3(v));
-      indices.push_back(i);
-      i++;
+  {
+    auto og_frame_vertices(frame_vertices);
+    auto og_frame_indices(frame_indices);
+    auto i = 4;
+    for (int n = 1; n < 4; n++) {
+      for (auto fi : og_frame_indices) {
+        auto v = glm::rotate(glm::mat4(1.0f), n * glm::radians(90.0f),
+                             glm::vec3(0.0f, 0.0f, 1.0f)) *
+                 glm::vec4(og_frame_vertices[fi], 1.0f);
+        frame_vertices.push_back(glm::vec3(v));
+        frame_indices.push_back(i);
+        i++;
+      }
     }
   }
 
-  auto new_size = [&](glm::vec4 color, glm::mat4 rot) {
+  auto frame_color = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
 
+  auto ft = frame_thickness;
+  std::vector<glm::vec3> main_face_vertices = {
+      {-0.5f + ft, -0.5f + ft, -0.5f},
+      {-0.5f + ft, 0.5f - ft, -0.5f},
+      {0.5f - ft, -0.5f + ft, -0.5f},
+      {0.5f - ft, 0.5f  - ft, -0.5f},
   };
+
+  std::vector<uint16_t> main_face_indices = {0, 2, 1, 1, 2, 3};
+
+  auto index = 0;
+  auto add_new_side = [&](glm::vec4 color, glm::mat4 rot) {
+    for (auto fi : frame_indices) {
+      auto vertex = rot * glm::vec4(frame_vertices[fi], 1.0f);
+      vertices.push_back(vertex);
+      indices.push_back(index);
+      colors.push_back(frame_color);
+      index++;
+    }
+    for(auto mfi: main_face_indices) {
+      auto vertex = rot * glm::vec4(main_face_vertices[mfi], 1.0f);
+      vertices.push_back(vertex);
+      indices.push_back(index);
+      colors.push_back(color);
+      index++;
+    }
+  };
+
+  // Front side
+  add_new_side(red, glm::mat4(1.0f));
+  // Left Right
+  add_new_side(white,
+               glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
+                           glm::vec3(0.0f, 1.0f, 0.0f)));
+  // Back side
+  add_new_side(orange,
+               glm::rotate(glm::mat4(1.0f), glm::radians(180.0f),
+                           glm::vec3(0.0f, 1.0f, 0.0f)));
+  // Right side
+  add_new_side(yellow,
+               glm::rotate(glm::mat4(1.0f), glm::radians(270.0f),
+                           glm::vec3(0.0f, 1.0f, 0.0f)));
+
+  // Top side
+  add_new_side(green,
+               glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
+                           glm::vec3(1.0f, 0.0f, 0.0f)));
+  // Bottom
+  add_new_side(blue,
+               glm::rotate(glm::mat4(1.0f), glm::radians(270.0f),
+                           glm::vec3(1.0f, 0.0f, 0.0f)));
 
   cube_mesh.send_position_data(&vertices[0], vertices.size());
   // const std::array<glm::vec4, 8> cube_colors = {
@@ -293,7 +347,7 @@ void gfx::GPU::draw() {
 
   int size = 3;
   float distance = 25.0f;
-  float spacing = 1.2f;
+  float spacing = 0.90f;
 
   for (int z = 0; z < size; z++) {
     for (int y = 0; y < size; y++) {
