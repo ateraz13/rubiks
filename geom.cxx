@@ -48,17 +48,17 @@ const std::array<uint16_t, 36> cube_indices = {{
     0, 5, 1,
     1, 3, 7, // Bottom Face
     7, 5, 1,
-    0, 2, 6, // Top Face
-    6, 4, 0
+    6, 0, 4, // Top Face
+    0, 6, 2
 }};
 
 const std::array<glm::vec3, 6> cube_normals = {{
     glm::vec3(0, 0, -1), // Front face
-    glm::vec3(0, -1, 0), // Bottom face
+    glm::vec3(1, 0, 0),   // Right face
     glm::vec3(0, 0, 1),  // Back face
     glm::vec3(-1, 0, 0), // Left face
-    glm::vec3(0, 1, 0),  // Top face
-    glm::vec3(1, 0, 0)   // Right face
+    glm::vec3(0, -1, 0), // Bottom face
+    glm::vec3(0, 1, 0)  // Top face
 }};
 
 } // namespace geom

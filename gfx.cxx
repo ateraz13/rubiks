@@ -12,6 +12,7 @@
 #include <glm/ext/scalar_constants.hpp>
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/trigonometric.hpp>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -218,55 +219,59 @@ void gfx::GPU::init_cube() {
   normals.reserve(geom::cube_vertices.size() * 6);
   colors.reserve(geom::cube_vertices.size() * 6);
 
-  const auto up = glm::vec3(0.0f, 1.0f, 0.0f);
-  const auto down = glm::vec3(0.0f, -1.0f, 0.0f);
-  const auto left = glm::vec3(-1.0f, 0.0f, 0.0f);
-  const auto right = glm::vec3(1.0f, 0.0f, 0.0f);
-  const auto forward = glm::vec3(1.0f, 0.0f, -1.0f);
-  const auto back = glm::vec3(0.0f, 0.0f, 1.0f);
-  const glm::vec4 red = {1.0f, 0.0f, 0.0f, 1.0f};
-  const glm::vec4 green = {0.0f, 1.0f, 0.0f, 1.0f};
-  const glm::vec4 blue = {0.0f, 0.0f, 1.0f, 1.0f};
-  const glm::vec4 yellow = {0.5f, 1.0f, 0.0f, 1.0f};
-  const glm::vec4 orange = {1.0f, 1.0f, 0.0f, 1.0f};
-  const glm::vec4 white = {1.0f, 1.0f, 1.0f, 1.0f};
+  // clang-format off
+  const glm::vec3 up      = {0.0f, -1.0f, 0.0f};
+  const glm::vec3 down    = {0.0f, 1.0f, 0.0f};
+  const glm::vec3 left    = {-1.0f, 0.0f, 0.0f};
+  const glm::vec3 right   = { 1.0f, 0.0f, 0.0f};
+  const glm::vec3 forward = {0.0f, 0.0f, -1.0f};
+  const glm::vec3 back    = {0.0f, 0.0f, 1.0f};
+  const glm::vec4 red     = {1.0f, 0.0f, 0.0f, 1.0f};
+  const glm::vec4 green   = {0.0f, 1.0f, 0.0f, 1.0f};
+  const glm::vec4 blue    = {0.0f, 0.0f, 1.0f, 1.0f};
+  const glm::vec4 yellow  = {1.0f, 1.0f, 0.0f, 1.0f};
+  const glm::vec4 orange  = {1.0f, 0.5f, 0.0f, 1.0f};
+  const glm::vec4 white   = {1.0f, 1.0f, 1.0f, 1.0f};
+  const glm::vec4 black   = {0.0f, 0.0f, 0.0f, 1.0f};
+  // clang-format on
 
   std::array<glm::vec3, 6> directions = {up, down, left, right, forward, back};
+  std::array<glm::vec4, 6> pallete = {blue, green, red, orange, yellow, white};
+  glm::vec3 default_normal = {0.0f, 0.0f, -1.0f};
 
-  std::array<glm::vec4, 6> pallete = {red, green, blue, yellow, orange, white};
+  std::vector<glm::vec3> frame_vertices = {
+      {-0.5f, -0.5f, 0.0f},
+      {0.5f, -0.5f, 0.0f},
+  };
 
-  for (auto i = 0; i < (geom::cube_indices.size() - 3); i += 3) {
-    auto index1 = geom::cube_indices[i];
-    auto index2 = geom::cube_indices[i + 1];
-    auto index3 = geom::cube_indices[i + 2];
-    auto vertex1 = geom::cube_vertices[index1];
-    auto vertex2 = geom::cube_vertices[index2];
-    auto vertex3 = geom::cube_vertices[index3];
+  std::vector<uint16_t> frame_indices = {0, 2, 1, 1, 2, 3};
 
-    auto tangent = glm::normalize(vertex2 - vertex1);
-    auto bitangent = glm::normalize(vertex3 - vertex1);
+  const auto frame_thickness = 0.2f;
 
-    auto normal = glm::normalize(glm::cross(tangent, bitangent));
-
-    normals.push_back(normal);
-    vertices.push_back(vertex1);
-    vertices.push_back(vertex2);
-    vertices.push_back(vertex3);
-
-    for (int i = 0; i < directions.size(); i++) {
-      auto dir = directions[i];
-      if (glm::dot(dir, normal) > 0.5) {
-        for(int n = 0; n < 3; n++ ) {
-          colors.push_back(pallete[i]);
-        }
-        break;
-      }
-    }
-
-    indices.push_back(i);
-    indices.push_back(i + 1);
-    indices.push_back(i + 2);
+  // Generate inner frame vertices based on thickness
+  {
+    auto v = glm::vec3(0.0f, frame_thickness, 0.0f);
+    auto h = glm::vec3(frame_thickness, 0.0f, 0.0f);
+    frame_vertices.reserve(4);
+    frame_vertices.push_back(frame_vertices[0] + v + h);
+    frame_vertices.push_back(frame_vertices[1] + v + -h);
   }
+
+   auto i = 0;
+  for (int n = 0; n < 4; n++) {
+    for (auto fi : frame_indices) {
+      auto v = glm::rotate(glm::mat4(1.0f), n * glm::radians(90.0f),
+                           glm::vec3(0.0f, 0.0f, 1.0f)) *
+               glm::vec4(frame_vertices[fi], 1.0f);
+      vertices.push_back(glm::vec3(v));
+      indices.push_back(i);
+      i++;
+    }
+  }
+
+  auto new_size = [&](glm::vec4 color, glm::mat4 rot) {
+
+  };
 
   cube_mesh.send_position_data(&vertices[0], vertices.size());
   // const std::array<glm::vec4, 8> cube_colors = {
@@ -286,22 +291,42 @@ void gfx::Graphics::draw() {
 
 void gfx::GPU::draw() {
 
-  glm::mat4 model = glm::mat4(1.0f);
-  glm::mat4 projection =
-      glm::perspective(glm::pi<float>() * 0.25f, 4.0f / 3.0f, 0.1f, 100.f);
-  glm::mat4 view =
-      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-  auto time = Game::instance().current_time();
-  view = glm::rotate(view, static_cast<float>(glm::pi<double>() * time),
-                     glm::vec3(0.0f, 1.0f, 0.0f));
-  glm::mat4 mvp = projection * view * model;
+  int size = 3;
+  float distance = 25.0f;
+  float spacing = 1.2f;
+
+  for (int z = 0; z < size; z++) {
+    for (int y = 0; y < size; y++) {
+      for (int x = 0; x < size; x++) {
+        glm::mat4 model = glm::translate(
+            glm::mat4(1.0f), glm::vec3(-2.0 + x * spacing, -2.0 + y * spacing,
+                                       -2.0f + z * spacing));
+        glm::mat4 projection = glm::perspective(glm::pi<float>() * 0.25f,
+                                                4.0f / 3.0f, 0.1f, 100.f);
+        glm::mat4 view = glm::translate(
+            glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -std::abs(distance)));
+        auto time = Game::instance().current_time();
+        view = glm::rotate(view, static_cast<float>(glm::pi<double>() * time),
+                           glm::vec3(0.0f, 1.0f, 0.0f));
+
+        // view = glm::rotate(view,
+        //                    static_cast<float>(glm::pi<double>() * time *
+        //                    0.5), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4 mvp = projection * view * model;
+        cube_mesh.send_mvp(mvp);
+        cube_mesh.draw();
+        for (int n = 0; n < 4; n++) {
+        }
+      }
+    }
+  }
 
   // square_mesh.send_mvp(mvp);
   // square_mesh.draw();
   // triangle_mesh.send_mvp(mvp);
   // triangle_mesh.draw();
-  cube_mesh.send_mvp(mvp);
-  cube_mesh.draw();
+  // cube_mesh.send_mvp(mvp);
+  // cube_mesh.draw();
 }
 
 gfx::SimpleMesh::SimpleMesh() {}
