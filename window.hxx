@@ -1,6 +1,7 @@
 #ifndef WINDOW_HXX
 #define WINDOW_HXX
 #include "gl.hxx"
+#include "keys.hxx"
 #include <GLFW/glfw3.h>
 #include <functional>
 #include <glm/vec2.hpp>
@@ -8,7 +9,6 @@
 #include <optional>
 #include <string>
 #include <tuple>
-#include "keys.hxx"
 
 using SystemWindowHandle = GLFWwindow *;
 using KeyboardKey = KeyCode;
@@ -47,7 +47,8 @@ public:
     void operator=(CBfunc cb);
     void operator()(SystemWindow win, uint32_t width, uint32_t height);
 
-    private : CBfunc m_resize_cb;
+  private:
+    CBfunc m_resize_cb;
   } resize_cb;
 
   void bind_context();
@@ -69,6 +70,8 @@ private:
 
   friend class SystemWindowBuilder;
   friend class WindowSystem;
+  friend std::ostream& operator<<(std::ostream &strm,
+                                 const SystemWindow &window);
 };
 
 class SystemWindowBuilder {
@@ -135,6 +138,11 @@ struct KeyEvent {
   bool operator<(const KeyEvent &other) const;
   bool operator==(const KeyEvent &other) const;
   bool operator>(const KeyEvent &other) const;
+  friend std::ostream& operator<<(std::ostream& strm, const KeyEvent& event);
 };
+
+std::ostream& operator<<(std::ostream &strm, const KeyState &state);
+std::ostream& operator<<(std::ostream &strm, const KeyEvent &event);
+std::ostream& operator<<(std::ostream& strm, const SystemWindow& window);
 
 #endif // WINDOW_HXX

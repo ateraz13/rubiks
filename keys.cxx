@@ -2,6 +2,14 @@
 #include <cstdint>
 #include <map>
 
+KeyCode::KeyCode(): value(0) {}
+KeyCode::KeyCode(int v): value(v) {}
+KeyCode::KeyCode(const KeyCode&  other): value(other.value) {}
+KeyCode KeyCode::operator=(KeyCode other) {
+      value = other.value;
+      return *this;
+}
+
 const char *keycode_str(KeyCode keycode) {
   static std::map<KeyCode, const char *> keycode_strings = {
       {RUBIKS_KEY_SPACE, "KEY_SPACE"},
@@ -144,3 +152,15 @@ std::strong_ordering KeyCode::operator<=>(KeyCode other) const {
 bool KeyCode::operator>(KeyCode other) const { return value > other.value; }
 bool KeyCode::operator<(KeyCode other) const { return value < other.value; }
 bool KeyCode::operator==(KeyCode other) const { return value == other.value; }
+bool KeyCode::operator>(int other) const { return value > other; }
+bool KeyCode::operator<(int other) const { return value < other; }
+bool KeyCode::operator==(int other) const { return value == other; }
+bool operator>(int lhs, KeyCode rhs) {
+      return lhs > rhs.value;
+}
+bool operator<(int lhs, KeyCode rhs) {
+      return lhs < rhs.value;
+}
+bool operator==(int lhs, KeyCode rhs) {
+      return lhs == rhs.value;
+}

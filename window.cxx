@@ -167,6 +167,7 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
                                    int mods) {
 
   KeyCode key{keycode};
+  std::cout << "Keycode: " << keycode << " = " << key << std::endl;
 
   auto &game = Game::instance();
   auto &ws = WindowSystem::instance();
@@ -192,12 +193,17 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
     auto key_state =
         key_state_native == GLFW_PRESS ? KeyState::PRESSED : KeyState::RELEASED;
     KeyEvent ke{*win, key, key_state};
+    std::cout << "Keyboard event: " << ke << std::endl;
 
     if (auto key_bind = game.m_keymap.find(ke);
-        key_bind != std::end(game.m_keymap)) {
+        key_bind != game.m_keymap.end()) {
 #ifdef DEBUG_MESSAGES
       std::cout << "Running action!\n";
 #endif
+      EXPR_LOG(key_bind->first == ke);
+      EXPR_LOG(key_bind->first < ke);
+      EXPR_LOG(key_bind->first > ke);
+      std::cout << "Key bind triggered: " << key_bind->first << std::endl;
       std::cout << "Key bind: " << key_bind->first.key << std::endl;
       // Run the action.
       (*(key_bind->second))();
@@ -238,7 +244,13 @@ bool SystemWindow::operator>(const SystemWindow &other) const {
 }
 
 bool KeyEvent::operator<(const KeyEvent &other) const {
-  return window < other.window && key < other.key && state < other.state;
+  if (window == other.window) {
+    if (key == other.key) {
+      return state < other.state;
+    }
+    return key < other.key;
+  }
+  return window < other.window;
 }
 
 bool KeyEvent::operator==(const KeyEvent &other) const {
@@ -246,7 +258,13 @@ bool KeyEvent::operator==(const KeyEvent &other) const {
 }
 
 bool KeyEvent::operator>(const KeyEvent &other) const {
-  return window > other.window && key > other.key && state > other.state;
+  if (window == other.window) {
+    if (key == other.key) {
+      return state > other.state;
+    }
+    return key > other.key;
+  }
+  return window > other.window;
 }
 
 WindowSystem::~WindowSystem() { glfwTerminate(); }
@@ -270,6 +288,15 @@ void WindowSystem::purge_window(SystemWindow win) {
        it != inst.m_system_windows.end();) {
     if (it->second == win) {
       it = inst.m_system_windows.erase(it);
+    } else {
+      it++;
+    }
+  }
+
+  for (auto it = inst.m_sw_handle_lookup.begin();
+       it != inst.m_sw_handle_lookup.end();) {
+    if (it->second == win) {
+      it = inst.m_sw_handle_lookup.erase(it);
     } else {
       it++;
     }
@@ -300,4 +327,30 @@ void SystemWindow::ResizeCB::operator()(SystemWindow win, uint32_t width,
 
 void SystemWindow::ResizeCB::operator=(SystemWindow::ResizeCB::CBfunc func) {
   m_resize_cb = func;
+}
+
+std::ostream& operator<<(std::ostream &strm, const KeyEvent &event) {
+  strm << "KeyEvent { " << event.window << ", " << event.key << ", "
+       << event.state << " }";
+  return strm;
+}
+
+std::ostream& operator<<(std::ostream &strm, const SystemWindow &window) {
+  strm << "GLFWwindow* (" << window.m_win_handle << ")";
+  return strm;
+}
+
+std::ostream& operator<<(std::ostream &strm, const KeyState &state) {
+  switch (state) {
+  case KeyState::PRESSED:
+    strm << "PRESSED";
+    break;
+  case KeyState::RELEASED:
+    strm << "RELEASED";
+    break;
+  default:
+    strm << "UNKNOWN_STATE";
+    break;
+  }
+  return strm;
 }

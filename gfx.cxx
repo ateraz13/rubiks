@@ -363,9 +363,9 @@ void gfx::GPU::draw() {
         view = glm::rotate(view, static_cast<float>(glm::pi<double>() * time),
                            glm::vec3(0.0f, 1.0f, 0.0f));
 
-        // view = glm::rotate(view,
-        //                    static_cast<float>(glm::pi<double>() * time *
-        //                    0.5), glm::vec3(1.0f, 0.0f, 0.0f));
+        view = glm::rotate(view,
+                           static_cast<float>(glm::pi<double>() * time *
+                           0.5), glm::vec3(1.0f, 0.0f, 0.0f));
         glm::mat4 mvp = projection * view * model;
         cube_mesh.send_mvp(mvp);
         cube_mesh.draw();

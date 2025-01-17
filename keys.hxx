@@ -5,12 +5,23 @@
 #include <ostream>
 
 struct KeyCode {
+  KeyCode();
+  KeyCode(const KeyCode& other);
+  KeyCode(int value);
+  KeyCode operator=(KeyCode other);
   int value;
   std::strong_ordering operator<=>(KeyCode other) const;
   bool operator>(KeyCode other) const;
   bool operator<(KeyCode other) const;
   bool operator==(KeyCode other) const;
+  bool operator>(int other) const;
+  bool operator<(int other) const;
+  bool operator==(int other) const;
 };
+
+bool operator>(int lhs, KeyCode rhs);
+bool operator<(int lhs, KeyCode rhs);
+bool operator==(int lhs, KeyCode rhs);
 
 const KeyCode RUBIKS_KEY_SPACE{GLFW_KEY_SPACE};
 const KeyCode RUBIKS_KEY_APOSTROPHE{GLFW_KEY_APOSTROPHE};
