@@ -4,13 +4,11 @@ project(rubiks)
 
 set(CXX_STANDARD 20)
 
-
 add_subdirectory(extern/glfw-3.4)
 
 find_package(glm CONFIG REQUIRED)
-find_package(GLEW 2.1.0 REQUIRED)
-set(OpenGL_GL_PREFERENCE GLVND)
-find_package(OpenGL REQUIRED)
+#set(OpenGL_GL_PREFERENCE GLVND)
+#find_package(OpenGL REQUIRED)
 
 set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx shader.cxx gl_calls.cxx window.cxx keys.cxx)
 
@@ -23,6 +21,7 @@ if(USE_GLAD)
   add_executable(rubiks ${RUBIKS_SOURCE_FILES} ${GLAD_ROOT_DIR}/src/gl.c)
   target_link_libraries(rubiks PRIVATE glm::glm glfw ${OPENGL_opengl_LIBRARY})
 else()
+  find_package(GLEW 2.1.0 REQUIRED)
   include_directories(${GLEW_INCLUDE_DIRS} ${GLFW3_INCLUDE_DIRS})
   add_executable(rubiks ${RUBIKS_SOURCE_FILES} ${OPENGL_opengl_LIBRARY})
   target_link_libraries(rubiks PRIVATE glm::glm glfw GLEW::GLEW ${OPENGL_opengl_LIBRARY})
