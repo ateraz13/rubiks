@@ -42,19 +42,12 @@ public:
   SystemWindow();
   ~SystemWindow();
 
-  struct ResizeCB {
-  public:
-    using CBfunc = std::function<void(SystemWindow, uint32_t, uint32_t)>;
+  using ResizeCB = std::function<void(SystemWindow, uint32_t, uint32_t)>;
 
-    void operator=(CBfunc cb);
-    void operator()(SystemWindow win, uint32_t width, uint32_t height);
-
-  private:
-    CBfunc m_resize_cb;
-  } resize_cb;
 
   void bind_context();
   void swap_buffers();
+  void set_resize_cb(ResizeCB resize_cb);
 
   static void swap(SystemWindow &, SystemWindow &);
 
@@ -66,15 +59,17 @@ private:
   void init(const SystemWindowConfig &win);
   void clean_up();
 
-  SystemWindowHandle m_win_handle = nullptr;
-  int *m_ref_count = nullptr;
-  bool m_initialized = false;
-  SystemWindowConfig m_initial_config;
+  struct Internal {
+    SystemWindowHandle win_handle = nullptr;
+    int ref_count = 0;
+    SystemWindowConfig initial_config;
+    ResizeCB resize_cb;
+  } *m_internal = nullptr;
 
   friend class SystemWindowBuilder;
   friend class WindowSystem;
-  friend std::ostream& operator<<(std::ostream &strm,
-                                 const SystemWindow &window);
+  friend std::ostream &operator<<(std::ostream &strm,
+                                  const SystemWindow &window);
 };
 
 class SystemWindowBuilder {
@@ -121,6 +116,7 @@ public:
 
 private:
   static void register_handle(SystemWindowHandle handle, SystemWindow window);
+  static void redirect_resize_cb(GLFWwindow *handle, int width, int height);
 
   WindowSystem();
 
@@ -142,11 +138,11 @@ struct KeyEvent {
   bool operator<(const KeyEvent &other) const;
   bool operator==(const KeyEvent &other) const;
   bool operator>(const KeyEvent &other) const;
-  friend std::ostream& operator<<(std::ostream& strm, const KeyEvent& event);
+  friend std::ostream &operator<<(std::ostream &strm, const KeyEvent &event);
 };
 
-std::ostream& operator<<(std::ostream &strm, const KeyState &state);
-std::ostream& operator<<(std::ostream &strm, const KeyEvent &event);
-std::ostream& operator<<(std::ostream& strm, const SystemWindow& window);
+std::ostream &operator<<(std::ostream &strm, const KeyState &state);
+std::ostream &operator<<(std::ostream &strm, const KeyEvent &event);
+std::ostream &operator<<(std::ostream &strm, const SystemWindow &window);
 
 #endif // WINDOW_HXX

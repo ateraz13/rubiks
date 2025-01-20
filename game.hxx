@@ -56,6 +56,7 @@ public:
 
   void save(const std::string &name);
   double get_current_time() const;
+  static void change_viewport_size(int width, int height);
 
   void operator=(const Game &other) = delete;
   Game(const Game &other) = delete;
@@ -98,6 +99,7 @@ private:
   std::map<KeyEvent, std::unique_ptr<Action>> m_keymap;
   gfx::Graphics m_gfx;
   std::chrono::time_point<std::chrono::steady_clock> m_last_frame_timepoint;
+  glm::vec3 clear_color = {1.0f, 0.0f, 0.0f};
   friend class WindowSystem;
 };
 

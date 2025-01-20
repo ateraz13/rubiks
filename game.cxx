@@ -74,7 +74,6 @@ void Game::init_input_system() {
 
 void Game::init_window_system() {
 
-  //   glfwSetWindowSizeCallback(mw, main_window_resized_cb);
   m_main_window =
       WindowSystem::instance()
           .new_window("main-window")
@@ -84,8 +83,7 @@ void Game::init_window_system() {
           .with_imgui()
           .build();
 
-  using namespace std::placeholders;
-  m_main_window->resize_cb = Game::acknowledge_main_window_resize;
+  m_main_window->set_resize_cb(&Game::acknowledge_main_window_resize);
   m_main_window->bind_context();
 
 
@@ -179,8 +177,6 @@ void Game::update() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-
-  glm::vec3 clear_color = {1.0f, 0.0f, 0.0f};
 
   bool show_demo_window = true;
   ImGui::ShowDemoWindow(&show_demo_window);
@@ -296,3 +292,7 @@ void RubiksCube::rotate_3rd_row_backwards() {
 void RubiksCube::reset() { std::cout << "reset" << std::endl; }
 
 double Game::current_time() const { return m_current_time; }
+
+void Game::change_viewport_size(int width, int height) {
+  Game::instance().m_gfx.viewport_size(width, height);
+}

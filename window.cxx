@@ -10,45 +10,36 @@
 static std::atomic<bool> is_glfw_initialized = false;
 static std::atomic<size_t> system_window_count = 0;
 
-SystemWindow::SystemWindow() : m_win_handle(nullptr), m_ref_count(new int(1)) {}
+SystemWindow::SystemWindow() : m_internal(nullptr) {}
 
 SystemWindow::SystemWindow(SystemWindow &&other)
-    : m_win_handle(other.m_win_handle), m_ref_count(other.m_ref_count),
-      m_initialized(other.m_initialized) {
+    : m_internal(other.m_internal) {
   std::cout << "Move construting system window!\n" << std::endl;
 
-  clean_up();
-
-  m_win_handle = other.m_win_handle;
-  m_initialized = other.m_initialized;
-  m_ref_count = other.m_ref_count;
-
-  other.m_win_handle = nullptr;
-  other.m_initialized = false;
-  other.m_ref_count = nullptr;
+  other.m_internal = nullptr;
 }
 
 SystemWindow::~SystemWindow() { clean_up(); }
 
 void SystemWindow::clean_up() {
-  if (m_initialized) {
-    if(m_initial_config.use_imgui) {
-      std::cout << "Shutting down imgui!\n";
-      ImGui_ImplOpenGL3_Shutdown();
-      ImGui_ImplGlfw_Shutdown();
-      ImGui::DestroyContext();
-    }
+  if (m_internal) {
     std::cout << "Destroying window instance!\n";
-    *m_ref_count -= 1;
-    if (*m_ref_count < 0) {
+    m_internal->ref_count -= 1;
+    if (m_internal->ref_count < 0) {
       std::cout << "SystemWindow: ref count below zero!\n";
     }
-    if (m_ref_count == 0) {
+    if (m_internal->ref_count == 0) {
+      if (m_internal->initial_config.use_imgui) {
+        std::cout << "Shutting down imgui!\n";
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+      }
       std::cout << "Destroying window!\n";
       system_window_count -= 1;
       is_glfw_initialized = false;
-      glfwDestroyWindow(m_win_handle);
-      delete m_ref_count;
+      glfwDestroyWindow(m_internal->win_handle);
+      delete m_internal;
     }
   }
 }
@@ -58,30 +49,32 @@ SystemWindow &SystemWindow::operator=(SystemWindow &&other) {
 
   clean_up();
 
-  m_win_handle = other.m_win_handle;
-  m_initialized = other.m_initialized;
-  m_ref_count = other.m_ref_count;
-
-  other.m_win_handle = nullptr;
-  other.m_initialized = false;
-  other.m_ref_count = nullptr;
+  m_internal = other.m_internal;
+  other.m_internal = nullptr;
 
   return *this;
 }
 
 SystemWindow::SystemWindow(const SystemWindow &other) {
-  m_win_handle = other.m_win_handle;
-  m_ref_count = other.m_ref_count;
-  *m_ref_count += 1;
+  if (other.m_internal) {
+    m_internal = other.m_internal;
+    m_internal->ref_count++;
+  }
 }
 
 SystemWindow &SystemWindow::operator=(const SystemWindow &other) {
-  auto tmp = SystemWindow(other);
-  std::swap(tmp, *this);
+  SystemWindow(std::move(*this));
+  if (other.m_internal) {
+    m_internal = other.m_internal;
+    m_internal->ref_count++;
+  }
   return *this;
 }
 
 void SystemWindow::init(const SystemWindowConfig &config) {
+  { SystemWindow(std::move(*this)); } // Unreference my self
+
+  m_internal = new SystemWindow::Internal();
 
   if (!is_glfw_initialized && !glfwInit()) {
     throw WindowingLibraryInitFailed("Failed to initialize glfw!\n");
@@ -104,7 +97,7 @@ void SystemWindow::init(const SystemWindowConfig &config) {
 
   glfwMakeContextCurrent(win);
 
-  if(config.opengl_version) {
+  if (config.opengl_version) {
     load_opengl_funcs(&glfwGetProcAddress);
   }
 
@@ -116,30 +109,35 @@ void SystemWindow::init(const SystemWindowConfig &config) {
     io.ConfigFlags |=
         ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     io.ConfigFlags |=
-        ImGuiConfigFlags_NavEnableGamepad;            // Enable Gamepad Controls
+        ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 
     ImGui_ImplGlfw_InitForOpenGL(win, true);
     ImGui_ImplOpenGL3_Init("#version 450");
   }
 
   glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
+  glfwSetWindowSizeCallback(win, &WindowSystem::redirect_resize_cb);
   system_window_count += 1;
-  m_initialized = true;
-  m_win_handle = win;
-  m_initial_config = config;
+  m_internal->win_handle = win;
+  m_internal->initial_config = config;
+  m_internal->ref_count = 1;
 
   WindowSystem::register_handle(win, *this);
 }
 
-void SystemWindow::swap_buffers() { glfwSwapBuffers(m_win_handle); }
-
-void SystemWindow::swap(SystemWindow &a, SystemWindow &b) {
-  std::swap(a.m_initialized, b.m_initialized);
-  std::swap(a.m_ref_count, b.m_ref_count);
-  std::swap(a.m_win_handle, b.m_win_handle);
+void SystemWindow::swap_buffers() {
+  assert(m_internal != nullptr);
+  glfwSwapBuffers(m_internal->win_handle);
 }
 
-void SystemWindow::bind_context() { glfwMakeContextCurrent(m_win_handle); }
+void SystemWindow::swap(SystemWindow &a, SystemWindow &b) {
+  std::swap(a.m_internal, b.m_internal);
+}
+
+void SystemWindow::bind_context() {
+  assert(m_internal != nullptr);
+  glfwMakeContextCurrent(m_internal->win_handle);
+}
 
 SystemWindowBuilder WindowSystem::new_window(std::string window_purpose) {
   return SystemWindowBuilder(std::move(window_purpose));
@@ -182,6 +180,18 @@ WindowSystem::WindowSystem() {}
 WindowSystem &WindowSystem::instance() {
   static WindowSystem inst;
   return inst;
+}
+
+void WindowSystem::redirect_resize_cb(GLFWwindow *handle, int width,
+                                      int height) {
+  auto &ws = WindowSystem::instance();
+  auto win = ws.find_system_window(handle);
+
+  std::cout << "Window size changed!\n";
+  if (win) {
+    std::cout << "Calling resize callback!\n";
+    win->m_internal->resize_cb(*win, width, height);
+  }
 }
 
 void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
@@ -231,24 +241,24 @@ WindowSystem::find_system_window(SystemWindowHandle handle) {
 void WindowSystem::poll_events() { glfwPollEvents(); }
 
 bool SystemWindow::operator<(const SystemWindow &other) const {
-  if (other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+  if (other.m_internal->win_handle == m_internal->win_handle && other.m_internal->ref_count != m_internal->ref_count) {
     std::cout << "WARNING: SystemWindow with multiple ref conters!";
   }
-  return m_win_handle < other.m_win_handle;
+  return m_internal->win_handle < other.m_internal->win_handle;
 }
 
 bool SystemWindow::operator==(const SystemWindow &other) const {
-  if (other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+  if (other.m_internal->win_handle == m_internal->win_handle && other.m_internal->ref_count != m_internal->ref_count) {
     std::cout << "WARNING: SystemWindow with multiple counters!";
   }
-  return m_win_handle == other.m_win_handle;
+  return m_internal->win_handle == other.m_internal->win_handle;
 }
 
 bool SystemWindow::operator>(const SystemWindow &other) const {
-  if (other.m_win_handle == m_win_handle && other.m_ref_count != m_ref_count) {
+  if (other.m_internal->win_handle == m_internal->win_handle && other.m_internal->ref_count != m_internal->ref_count) {
     std::cout << "WARNING: SystemWindow with multiple counters!";
   }
-  return m_win_handle > other.m_win_handle;
+  return m_internal->win_handle > other.m_internal->win_handle;
 }
 
 bool KeyEvent::operator<(const KeyEvent &other) const {
@@ -322,19 +332,8 @@ void WindowSystem::window_resized_cb(SystemWindowHandle handle, uint32_t w,
   auto &inst = WindowSystem::instance();
   auto it = inst.m_sw_handle_lookup.find(handle);
   if (it != inst.m_sw_handle_lookup.end()) {
-    it->second.resize_cb(it->second, w, h);
+    it->second.m_internal->resize_cb(it->second, w, h);
   }
-}
-
-void SystemWindow::ResizeCB::operator()(SystemWindow win, uint32_t width,
-                                        uint32_t height) {
-  if (m_resize_cb) {
-    m_resize_cb(win, width, height);
-  }
-}
-
-void SystemWindow::ResizeCB::operator=(SystemWindow::ResizeCB::CBfunc func) {
-  m_resize_cb = func;
 }
 
 std::ostream &operator<<(std::ostream &strm, const KeyEvent &event) {
@@ -344,7 +343,11 @@ std::ostream &operator<<(std::ostream &strm, const KeyEvent &event) {
 }
 
 std::ostream &operator<<(std::ostream &strm, const SystemWindow &window) {
-  strm << "GLFWwindow* (" << window.m_win_handle << ")";
+  if(window.m_internal) {
+    strm << "GLFWwindow* (" << window.m_internal->win_handle << ")";
+  } else {
+    strm << "[Null Window]";
+  }
   return strm;
 }
 
@@ -366,4 +369,9 @@ std::ostream &operator<<(std::ostream &strm, const KeyState &state) {
 SystemWindowBuilder &SystemWindowBuilder::with_imgui() {
   m_config.use_imgui = true;
   return *this;
+}
+
+void SystemWindow::set_resize_cb(ResizeCB resize_cb) {
+  assert(m_internal != nullptr);
+  m_internal->resize_cb = resize_cb;
 }
