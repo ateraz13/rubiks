@@ -337,6 +337,8 @@ void gfx::Graphics::draw() {
   // EXPR_LOG(m_main_shader->id());
   auto viewport_size = m_viewport_size.load();
   dglViewport(0, 0, viewport_size.x, viewport_size.y);
+  m_gpu.set_aspect_ratio((float)viewport_size.x / (float)viewport_size.y);
+  EXPR_LOG((viewport_size.y / viewport_size.x));
   m_main_shader->use();
   m_gpu.draw();
 }
@@ -353,8 +355,9 @@ void gfx::GPU::draw() {
         glm::mat4 model = glm::translate(
             glm::mat4(1.0f), glm::vec3(-2.0 + x * spacing, -2.0 + y * spacing,
                                        -2.0f + z * spacing));
+
         glm::mat4 projection = glm::perspective(glm::pi<float>() * 0.25f,
-                                                4.0f / 3.0f, 0.1f, 100.f);
+                                                m_aspect_ratio, 0.1f, 100.f);
         glm::mat4 view = glm::translate(
             glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -std::abs(distance)));
         auto time = Game::instance().current_time();
@@ -462,4 +465,8 @@ void gfx::Graphics::viewport_size(glm::ivec2 size) {
 
 glm::ivec2 gfx::Graphics::viewport_size() const {
   return m_viewport_size.load();
+}
+
+void gfx::GPU::set_aspect_ratio(float value) {
+  m_aspect_ratio = value;
 }

@@ -3,6 +3,7 @@
 #include "const.hxx"
 #include "shader.hxx"
 #include <array>
+#include <glm/ext/vector_int2.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -84,6 +85,7 @@ public:
 
   void init();
   void draw();
+  void set_aspect_ratio(float value);
 
   GPU(const GPU &other) = delete;
   GPU &operator=(const GPU &other) = delete;
@@ -93,6 +95,7 @@ private:
   void init_cube();
   void init_triangle();
   void init_square();
+  float m_aspect_ratio;
   friend Graphics;
 };
 
