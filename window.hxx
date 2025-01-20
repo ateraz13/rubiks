@@ -22,10 +22,12 @@ public:
   std::optional<GLVersion> opengl_version = {};
   std::string title = "No title";
   std::string purpose = "undefined";
+  bool use_imgui = false;
 
 private:
   SystemWindowConfig();
   friend class SystemWindowBuilder;
+  friend class SystemWindow;
 };
 
 class SystemWindow {
@@ -67,6 +69,7 @@ private:
   SystemWindowHandle m_win_handle = nullptr;
   int *m_ref_count = nullptr;
   bool m_initialized = false;
+  SystemWindowConfig m_initial_config;
 
   friend class SystemWindowBuilder;
   friend class WindowSystem;
@@ -79,6 +82,7 @@ public:
   SystemWindowBuilder &with_size(int w, int h);
   SystemWindowBuilder &with_opengl(int major_version, int minor_version);
   SystemWindowBuilder &with_title(const std::string &title);
+  SystemWindowBuilder &with_imgui();
   SystemWindow build();
 
   SystemWindowBuilder(const SystemWindowBuilder &other) = delete;

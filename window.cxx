@@ -2,6 +2,9 @@
 #include "except.hxx"
 #include "game.hxx"
 #include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <optional>
 
 static std::atomic<bool> is_glfw_initialized = false;
@@ -29,6 +32,12 @@ SystemWindow::~SystemWindow() { clean_up(); }
 
 void SystemWindow::clean_up() {
   if (m_initialized) {
+    if(m_initial_config.use_imgui) {
+      std::cout << "Shutting down imgui!\n";
+      ImGui_ImplOpenGL3_Shutdown();
+      ImGui_ImplGlfw_Shutdown();
+      ImGui::DestroyContext();
+    }
     std::cout << "Destroying window instance!\n";
     *m_ref_count -= 1;
     if (*m_ref_count < 0) {
@@ -61,22 +70,18 @@ SystemWindow &SystemWindow::operator=(SystemWindow &&other) {
 }
 
 SystemWindow::SystemWindow(const SystemWindow &other) {
-  std::cout << "Copying instance of system window\n!" << std::endl;
   m_win_handle = other.m_win_handle;
   m_ref_count = other.m_ref_count;
   *m_ref_count += 1;
 }
 
 SystemWindow &SystemWindow::operator=(const SystemWindow &other) {
-  std::cout << "Copy assining of system window\n!";
   auto tmp = SystemWindow(other);
   std::swap(tmp, *this);
   return *this;
 }
 
 void SystemWindow::init(const SystemWindowConfig &config) {
-
-  std::cout << "Inialising system window object!\n" << std::endl;
 
   if (!is_glfw_initialized && !glfwInit()) {
     throw WindowingLibraryInitFailed("Failed to initialize glfw!\n");
@@ -97,18 +102,36 @@ void SystemWindow::init(const SystemWindowConfig &config) {
     throw SystemWindowFailedToCreate("Could not create GLFW window!\n");
   }
 
+  glfwMakeContextCurrent(win);
+
+  if(config.opengl_version) {
+    load_opengl_funcs(&glfwGetProcAddress);
+  }
+
+  if (config.use_imgui && config.opengl_version) {
+    std::cout << "Init imgui!\n!";
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |=
+        ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |=
+        ImGuiConfigFlags_NavEnableGamepad;            // Enable Gamepad Controls
+
+    ImGui_ImplGlfw_InitForOpenGL(win, true);
+    ImGui_ImplOpenGL3_Init("#version 450");
+  }
+
   glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
   system_window_count += 1;
   m_initialized = true;
   m_win_handle = win;
+  m_initial_config = config;
 
   WindowSystem::register_handle(win, *this);
 }
 
-void SystemWindow::swap_buffers() {
-  // std::cout << "win_handle: " << m_win_handle << "\n";
-  glfwSwapBuffers(m_win_handle);
-}
+void SystemWindow::swap_buffers() { glfwSwapBuffers(m_win_handle); }
 
 void SystemWindow::swap(SystemWindow &a, SystemWindow &b) {
   std::swap(a.m_initialized, b.m_initialized);
@@ -151,7 +174,6 @@ SystemWindow SystemWindowBuilder::build() {
   auto win = SystemWindow();
   win.init(m_config);
   WindowSystem::instance().register_window(m_config.purpose, win);
-  std::cout << "I built the thing damn it!\n";
   return std::move(win);
 }
 
@@ -180,13 +202,7 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
   }
 
 #ifdef DEBUG_MESSAGES
-  std::cout << "Event received: ";
-  if (key == GLFW_KEY_ESCAPE) {
-    std::cout << "ESCAPE\n";
-  } else {
-    std::cout << "UNKOWN KEY\n";
-  }
-  std::cout << std::endl;
+  std::cout << "Pressed a key: " << key << std::endl;
 #endif
 
   if (key_state_native == GLFW_PRESS || key_state_native == GLFW_RELEASE) {
@@ -197,14 +213,6 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
 
     if (auto key_bind = game.m_keymap.find(ke);
         key_bind != game.m_keymap.end()) {
-#ifdef DEBUG_MESSAGES
-      std::cout << "Running action!\n";
-#endif
-      EXPR_LOG(key_bind->first == ke);
-      EXPR_LOG(key_bind->first < ke);
-      EXPR_LOG(key_bind->first > ke);
-      std::cout << "Key bind triggered: " << key_bind->first << std::endl;
-      std::cout << "Key bind: " << key_bind->first.key << std::endl;
       // Run the action.
       (*(key_bind->second))();
     }
@@ -329,18 +337,18 @@ void SystemWindow::ResizeCB::operator=(SystemWindow::ResizeCB::CBfunc func) {
   m_resize_cb = func;
 }
 
-std::ostream& operator<<(std::ostream &strm, const KeyEvent &event) {
+std::ostream &operator<<(std::ostream &strm, const KeyEvent &event) {
   strm << "KeyEvent { " << event.window << ", " << event.key << ", "
        << event.state << " }";
   return strm;
 }
 
-std::ostream& operator<<(std::ostream &strm, const SystemWindow &window) {
+std::ostream &operator<<(std::ostream &strm, const SystemWindow &window) {
   strm << "GLFWwindow* (" << window.m_win_handle << ")";
   return strm;
 }
 
-std::ostream& operator<<(std::ostream &strm, const KeyState &state) {
+std::ostream &operator<<(std::ostream &strm, const KeyState &state) {
   switch (state) {
   case KeyState::PRESSED:
     strm << "PRESSED";
@@ -353,4 +361,9 @@ std::ostream& operator<<(std::ostream &strm, const KeyState &state) {
     break;
   }
   return strm;
+}
+
+SystemWindowBuilder &SystemWindowBuilder::with_imgui() {
+  m_config.use_imgui = true;
+  return *this;
 }

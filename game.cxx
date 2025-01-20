@@ -2,14 +2,17 @@
 #include "except.hxx"
 #include "gl_calls.hxx"
 #include "utility.hxx"
-#include <functional>
 #include "window.hxx"
 #include <GLFW/glfw3.h>
 #include <chrono>
-#include <memory>
 #include <cmath>
 #include <cstring>
+#include <functional>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <thread>
 
@@ -45,7 +48,8 @@ Game::~Game() {
   // save("before_exit_autosave");
 }
 
-void Game::acknowledge_main_window_resize(SystemWindow win, int width, int height) {
+void Game::acknowledge_main_window_resize(SystemWindow win, int width,
+                                          int height) {
   auto &inst = Game::instance();
   std::cout << "Window resized: width = " << width << ", height = " << height
             << "\n";
@@ -72,17 +76,18 @@ void Game::init_window_system() {
 
   //   glfwSetWindowSizeCallback(mw, main_window_resized_cb);
   m_main_window =
-      WindowSystem::instance().new_window("main-window")
+      WindowSystem::instance()
+          .new_window("main-window")
           .with_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT)
           .with_title("Rubiks!")
           .with_opengl(4, 5)
+          .with_imgui()
           .build();
 
   using namespace std::placeholders;
   m_main_window->resize_cb = Game::acknowledge_main_window_resize;
   m_main_window->bind_context();
 
-  load_opengl_funcs(&glfwGetProcAddress);
 
   glfwSwapInterval(0);
   m_gfx.viewport_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT);
@@ -170,6 +175,43 @@ void Game::update() {
   using namespace std::chrono;
   auto frame_begin_time = steady_clock::now();
 
+  WindowSystem::poll_events();
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+
+  glm::vec3 clear_color = {1.0f, 0.0f, 0.0f};
+
+  // 2. Show a simple window that we create ourselves. We use a Begin/End pair
+  // to create a named window.
+  {
+    static float f = 0.0f;
+    static int counter = 0;
+
+    ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and
+                                   // append into it.
+
+    ImGui::Text("This is some useful text."); // Display some text (you can use
+                                              // a format strings too)
+
+    ImGui::SliderFloat("float", &f, 0.0f,
+                       1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+    ImGui::ColorEdit3(
+        "clear color",
+        (float *)&clear_color); // Edit 3 floats representing a color
+
+    if (ImGui::Button("Button")) // Buttons return true when clicked (most
+                                 // widgets return true when edited/activated)
+      counter++;
+    ImGui::SameLine();
+    ImGui::Text("counter = %d", counter);
+
+    // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+    //             1000.0f / io.Framerate, io.Framerate);
+    ImGui::End();
+  }
+
+  ImGui::Render();
   m_main_window->bind_context();
   glClearColor(0.12f, 0.0, 0.12f, 1.0f);
   glClearDepth(10.0f);
@@ -183,7 +225,8 @@ void Game::update() {
 
   m_gfx.draw();
   m_main_window->swap_buffers();
-  glfwPollEvents();
+
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   using namespace std::chrono_literals;
   using std::chrono::duration;
@@ -250,4 +293,3 @@ void RubiksCube::rotate_3rd_row_backwards() {
 void RubiksCube::reset() { std::cout << "reset" << std::endl; }
 
 double Game::current_time() const { return m_current_time; }
-

@@ -2,7 +2,10 @@
 #include "game.hxx"
 #include "geom.hxx"
 #include "gl_calls.hxx"
+#include "imgui_impl_opengl3.h"
 #include "iterator.hxx"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
 #include "utility.hxx"
 #include <algorithm>
 #include <array>
