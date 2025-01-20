@@ -4,8 +4,6 @@
 #include "gl_calls.hxx"
 #include "imgui_impl_opengl3.h"
 #include "iterator.hxx"
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
 #include "utility.hxx"
 #include <algorithm>
 #include <array>
@@ -16,6 +14,8 @@
 #include <glm/geometric.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -283,7 +283,7 @@ void gfx::GPU::init_cube() {
       {-0.5f + ft, -0.5f + ft, -0.5f},
       {-0.5f + ft, 0.5f - ft, -0.5f},
       {0.5f - ft, -0.5f + ft, -0.5f},
-      {0.5f - ft, 0.5f  - ft, -0.5f},
+      {0.5f - ft, 0.5f - ft, -0.5f},
   };
 
   std::vector<uint16_t> main_face_indices = {0, 2, 1, 1, 2, 3};
@@ -297,7 +297,7 @@ void gfx::GPU::init_cube() {
       colors.push_back(frame_color);
       index++;
     }
-    for(auto mfi: main_face_indices) {
+    for (auto mfi : main_face_indices) {
       auto vertex = rot * glm::vec4(main_face_vertices[mfi], 1.0f);
       vertices.push_back(vertex);
       indices.push_back(index);
@@ -309,26 +309,21 @@ void gfx::GPU::init_cube() {
   // Front side
   add_new_side(red, glm::mat4(1.0f));
   // Left Right
-  add_new_side(white,
-               glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
-                           glm::vec3(0.0f, 1.0f, 0.0f)));
+  add_new_side(white, glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
+                                  glm::vec3(0.0f, 1.0f, 0.0f)));
   // Back side
-  add_new_side(orange,
-               glm::rotate(glm::mat4(1.0f), glm::radians(180.0f),
-                           glm::vec3(0.0f, 1.0f, 0.0f)));
+  add_new_side(orange, glm::rotate(glm::mat4(1.0f), glm::radians(180.0f),
+                                   glm::vec3(0.0f, 1.0f, 0.0f)));
   // Right side
-  add_new_side(yellow,
-               glm::rotate(glm::mat4(1.0f), glm::radians(270.0f),
-                           glm::vec3(0.0f, 1.0f, 0.0f)));
+  add_new_side(yellow, glm::rotate(glm::mat4(1.0f), glm::radians(270.0f),
+                                   glm::vec3(0.0f, 1.0f, 0.0f)));
 
   // Top side
-  add_new_side(green,
-               glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
-                           glm::vec3(1.0f, 0.0f, 0.0f)));
+  add_new_side(green, glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
+                                  glm::vec3(1.0f, 0.0f, 0.0f)));
   // Bottom
-  add_new_side(blue,
-               glm::rotate(glm::mat4(1.0f), glm::radians(270.0f),
-                           glm::vec3(1.0f, 0.0f, 0.0f)));
+  add_new_side(blue, glm::rotate(glm::mat4(1.0f), glm::radians(270.0f),
+                                 glm::vec3(1.0f, 0.0f, 0.0f)));
 
   cube_mesh.send_position_data(&vertices[0], vertices.size());
   // const std::array<glm::vec4, 8> cube_colors = {
@@ -367,8 +362,8 @@ void gfx::GPU::draw() {
                            glm::vec3(0.0f, 1.0f, 0.0f));
 
         view = glm::rotate(view,
-                           static_cast<float>(glm::pi<double>() * time *
-                           0.5), glm::vec3(1.0f, 0.0f, 0.0f));
+                           static_cast<float>(glm::pi<double>() * time * 0.5),
+                           glm::vec3(1.0f, 0.0f, 0.0f));
         glm::mat4 mvp = projection * view * model;
         cube_mesh.send_mvp(mvp);
         cube_mesh.draw();

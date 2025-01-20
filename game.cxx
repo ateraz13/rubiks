@@ -182,6 +182,9 @@ void Game::update() {
 
   glm::vec3 clear_color = {1.0f, 0.0f, 0.0f};
 
+  bool show_demo_window = true;
+  ImGui::ShowDemoWindow(&show_demo_window);
+
   // 2. Show a simple window that we create ourselves. We use a Begin/End pair
   // to create a named window.
   {
@@ -194,8 +197,8 @@ void Game::update() {
     ImGui::Text("This is some useful text."); // Display some text (you can use
                                               // a format strings too)
 
-    ImGui::SliderFloat("float", &f, 0.0f,
-                       1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+    ImGui::SliderFloat("orbit_speed", &f, 0.0f,
+                       5.0f); // Edit 1 float using a slider from 0.0f to 1.0f
     ImGui::ColorEdit3(
         "clear color",
         (float *)&clear_color); // Edit 3 floats representing a color
@@ -213,7 +216,7 @@ void Game::update() {
 
   ImGui::Render();
   m_main_window->bind_context();
-  glClearColor(0.12f, 0.0, 0.12f, 1.0f);
+  glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
   glClearDepth(10.0f);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
@@ -224,10 +227,10 @@ void Game::update() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   m_gfx.draw();
-  m_main_window->swap_buffers();
 
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+  m_main_window->swap_buffers();
   using namespace std::chrono_literals;
   using std::chrono::duration;
 

@@ -74,7 +74,6 @@ private:
   const std::array<GLuint, SIZE(UniformType::COUNT)> m_uniforms = {25};
   GLuint m_vao = 0;
   size_t m_index_count = 0;
-  ;
 };
 
 struct GPU {
