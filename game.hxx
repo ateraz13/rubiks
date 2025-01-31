@@ -2,6 +2,7 @@
 #define GAME_HXX
 #include "geom.hxx"
 #include "gfx.hxx"
+#include "console.hxx"
 #include "utility.hxx"
 #include <array>
 #include <chrono>
@@ -100,6 +101,7 @@ private:
   gfx::Graphics m_gfx;
   std::chrono::time_point<std::chrono::steady_clock> m_last_frame_timepoint;
   glm::vec3 clear_color = {1.0f, 0.0f, 0.0f};
+  Console m_console;
   friend class WindowSystem;
 };
 

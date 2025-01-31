@@ -181,6 +181,8 @@ void Game::update() {
   bool show_demo_window = true;
   ImGui::ShowDemoWindow(&show_demo_window);
 
+  m_console.draw();
+
   // 2. Show a simple window that we create ourselves. We use a Begin/End pair
   // to create a named window.
   {
