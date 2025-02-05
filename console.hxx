@@ -16,9 +16,7 @@ public:
     ~Console();
 
     void draw();
-
     bool visible() const;
-
     void toggle_visible();
     void hide();
     void show();
@@ -30,7 +28,7 @@ private:
     std::stringstream m_output;
     bool m_is_visible = false;
     std::string m_title = "Console";
-    int width = 800, height = 600;
+    int m_width = 800, m_height = 600;
 };
 
 

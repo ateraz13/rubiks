@@ -101,6 +101,9 @@ void SystemWindow::init(const SystemWindowConfig &config) {
     load_opengl_funcs(&glfwGetProcAddress);
   }
 
+  glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
+  glfwSetWindowSizeCallback(win, &WindowSystem::redirect_resize_cb);
+
   if (config.use_imgui && config.opengl_version) {
     std::cout << "Init imgui!\n!";
     IMGUI_CHECKVERSION();
@@ -115,8 +118,6 @@ void SystemWindow::init(const SystemWindowConfig &config) {
     ImGui_ImplOpenGL3_Init("#version 450");
   }
 
-  glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
-  glfwSetWindowSizeCallback(win, &WindowSystem::redirect_resize_cb);
   system_window_count += 1;
   m_internal->win_handle = win;
   m_internal->initial_config = config;

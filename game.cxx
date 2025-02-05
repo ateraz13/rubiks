@@ -86,7 +86,6 @@ void Game::init_window_system() {
   m_main_window->set_resize_cb(&Game::acknowledge_main_window_resize);
   m_main_window->bind_context();
 
-
   glfwSwapInterval(0);
   m_gfx.viewport_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT);
 }
@@ -179,7 +178,7 @@ void Game::update() {
   ImGui::NewFrame();
 
   bool show_demo_window = true;
-  ImGui::ShowDemoWindow(&show_demo_window);
+  // ImGui::ShowDemoWindow(&show_demo_window);
 
   m_console.draw();
 
@@ -189,11 +188,9 @@ void Game::update() {
     static float f = 0.0f;
     static int counter = 0;
 
-    ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and
-                                   // append into it.
+    ImGui::Begin("Properties");
 
-    ImGui::Text("This is some useful text."); // Display some text (you can use
-                                              // a format strings too)
+    ImGui::Text("This is some useful text.");
 
     ImGui::SliderFloat("orbit_speed", &f, 0.0f,
                        5.0f); // Edit 1 float using a slider from 0.0f to 1.0f
