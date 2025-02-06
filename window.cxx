@@ -201,7 +201,6 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
                                    int mods) {
 
   KeyCode key{keycode};
-  glog << "Keycode: " << keycode << " = " << key << "\n";
 
   auto &game = Game::instance();
   auto &ws = WindowSystem::instance();
@@ -226,7 +225,7 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
     if (auto key_bind = game.m_keymap.find(ke);
         key_bind != game.m_keymap.end()) {
       // Run the action.
-      (*(key_bind->second))();
+      key_bind->second->execute();
     }
   }
 }

@@ -14,7 +14,8 @@ Console::Console() {
   m_output << "Sauce!" << std::endl;
   m_output << "Sauce!" << std::endl;
   m_title = strm.str();
-  m_command_list["quit"] = std::make_unique<QuitAction>();
+  m_command_list["quit"] = std::make_unique<ActionCommand>(std::make_shared<QuitAction>());
+  m_command_list["print"] = std::make_unique<PrintCommand>();
 }
 
 Console::~Console() { m_console_count -= 1; }
@@ -77,9 +78,6 @@ void Console::draw() {
       ImGui::EndPopup();
     }
 
-    ImGui::TextUnformatted("Sauce Default!");
-    // std::istringstream strm {m_output.str()};
-    std::string line;
     ImGui::TextUnformatted(m_output.str().c_str());
 
     if(m_last_scroll == m_last_max_scroll) {
@@ -95,12 +93,25 @@ void Console::draw() {
     auto prompt_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll;
     if(ImGui::InputText("prompt", &m_prompt[0], (m_prompt.size()-1), prompt_flags)) {
       auto input = std::string(&m_prompt[0]);
-      m_output << input << std::endl;
       std::fill(m_prompt.begin(), m_prompt.end(), '\0');
-      if(auto found = m_command_list.find(input);
-         found != m_command_list.end()) {
-        (*(found->second))();
+      std::istringstream strm(input);
+      std::vector<std::string> args;
+      std::string arg;
+      std::string command;
+      std::getline(strm, command, ' ');
+      while (std::getline(strm, arg, ' ')) {
+        args.push_back(arg);
       }
+      if(command.size() > 0) {
+        if (auto found = m_command_list.find(command);
+            found != m_command_list.end()) {
+          found->second->execute(args);
+        } else {
+          m_output << "Invalid command!\n";
+        }
+      }
+      // Scroll to bottom when prompt is submited.
+      m_last_scroll = m_last_max_scroll;
       refocus_prompt = true;
     }
 

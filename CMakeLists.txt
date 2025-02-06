@@ -10,7 +10,7 @@ find_package(glm CONFIG REQUIRED)
 #set(OpenGL_GL_PREFERENCE GLVND)
 #find_package(OpenGL REQUIRED)
 
-set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx shader.cxx gl_calls.cxx window.cxx keys.cxx console.cxx)
+set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx shader.cxx gl_calls.cxx window.cxx keys.cxx console.cxx command.cxx)
 
 file(GLOB IMGUI_SOURCE_FILES extern/imgui/*.cpp)
 set(IMGUI_SOURCE_FILES ${IMGUI_SOURCE_FILES} extern/imgui/backends/imgui_impl_glfw.cpp extern/imgui/backends/imgui_impl_opengl3.cpp)

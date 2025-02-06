@@ -1,6 +1,6 @@
 #ifndef CONSOLE_HXX
 #define CONSOLE_HXX
-#include "action.hxx"
+#include "command.hxx"
 #include <array>
 #include <map>
 #include <memory>
@@ -36,7 +36,7 @@ private:
   bool m_is_visible = false;
   std::string m_title = "Console";
   int m_width = 800, m_height = 600;
-  std::map<std::string, std::unique_ptr<Action>> m_command_list;
+  std::map<std::string, std::unique_ptr<Command>> m_command_list;
   float m_last_scroll = 0.0f;
   float m_last_max_scroll = 0.0f;
   std::mutex m_lock;

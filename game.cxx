@@ -60,7 +60,7 @@ void Game::acknowledge_main_window_resize(SystemWindow win, int width,
   inst.m_gfx.viewport_size(width, height);
 }
 
-void QuitAction::operator()() { Game::instance().stop(); }
+void QuitAction::execute() { Game::instance().stop(); }
 
 void Game::init_input_system() {
 
