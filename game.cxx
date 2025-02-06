@@ -1,6 +1,7 @@
 #include "game.hxx"
 #include "except.hxx"
 #include "gl_calls.hxx"
+#include "glog.hxx"
 #include "utility.hxx"
 #include "window.hxx"
 #include <GLFW/glfw3.h>
@@ -21,6 +22,8 @@
 const int MAIN_WINDOW_DEFAULT_HEIGHT = 768;
 const int MAIN_WINDOW_DEFAULT_WIDTH = 1024;
 const char *MAIN_WINDOW_DEFAULT_TITLE = "Rubiks";
+
+GlobalLog glog;
 
 Game &Game::instance() {
   static auto &game = Game::init();
@@ -295,3 +298,7 @@ double Game::current_time() const { return m_current_time; }
 void Game::change_viewport_size(int width, int height) {
   Game::instance().m_gfx.viewport_size(width, height);
 }
+
+GlobalLog::GlobalLog()
+    : std::ostream(
+          dynamic_cast<std::streambuf *>(&(Game::instance().m_console))) {}

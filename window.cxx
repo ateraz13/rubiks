@@ -6,6 +6,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <optional>
+#include "glog.hxx"
 
 static std::atomic<bool> is_glfw_initialized = false;
 static std::atomic<size_t> system_window_count = 0;
@@ -200,7 +201,7 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
                                    int mods) {
 
   KeyCode key{keycode};
-  std::cout << "Keycode: " << keycode << " = " << key << std::endl;
+  glog << "Keycode: " << keycode << " = " << key << "\n";
 
   auto &game = Game::instance();
   auto &ws = WindowSystem::instance();

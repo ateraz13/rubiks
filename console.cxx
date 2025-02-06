@@ -14,6 +14,7 @@ Console::Console() {
   m_output << "Sauce!" << std::endl;
   m_output << "Sauce!" << std::endl;
   m_title = strm.str();
+  m_command_list["quit"] = std::make_unique<QuitAction>();
 }
 
 Console::~Console() { m_console_count -= 1; }
@@ -77,25 +78,32 @@ void Console::draw() {
     }
 
     ImGui::TextUnformatted("Sauce Default!");
-    std::istringstream strm{m_output.str()};
+    // std::istringstream strm{m_output.str()};
     std::string line;
-    while (std::getline(strm, line)) {
-      std::cout << "Line: " << line << std::endl;
-      ImGui::TextUnformatted(line.c_str());
-    }
+    ImGui::TextUnformatted(m_output.str().c_str());
 
     ImGui::EndChild();
 
+    // FIXME: The prompt should be automatically refocused when the user presses any alphanumeric key or valid symbol used in aprompt.
+    bool refocus_prompt = false;
     auto prompt_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll;
     if(ImGui::InputText("prompt", &m_prompt[0], (m_prompt.size()-1), prompt_flags)) {
       m_output << std::string(&m_prompt[0]) << std::endl;
       std::fill(m_prompt.begin(), m_prompt.end(), '\0');
+      refocus_prompt = true;
     }
 
     ImGui::SetItemDefaultFocus();
 
-    ImGui::SetKeyboardFocusHere(-1);
+    if(refocus_prompt) {
+      ImGui::SetKeyboardFocusHere(-1);
+    }
 
   }
   ImGui::End();
+}
+
+std::streamsize Console::xsputn(const char_type* s, std::streamsize count) {
+  m_output.write(s, count);
+  return count;
 }

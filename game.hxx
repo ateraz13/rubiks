@@ -1,14 +1,15 @@
 #ifndef GAME_HXX
 #define GAME_HXX
+#include "action.hxx"
+#include "console.hxx"
+#include "const.hxx"
 #include "geom.hxx"
 #include "gfx.hxx"
-#include "console.hxx"
 #include "utility.hxx"
+#include "window.hxx"
 #include <array>
 #include <chrono>
 #include <cstdint>
-#include "const.hxx"
-#include "window.hxx"
 #include <map>
 #include <memory>
 #include <queue>
@@ -38,11 +39,6 @@ private:
   std::array<CellID, 9 * 3> m_cells;
 };
 
-class Action {
-public:
-  virtual void operator()() = 0;
-};
-
 // FIXME: This Game class should be thread safe, it is not at the moment.
 class Game {
 public:
@@ -53,7 +49,8 @@ public:
   void start();
   void update();
   void stop();
-  static void acknowledge_main_window_resize(SystemWindow win, int new_width, int new_height);
+  static void acknowledge_main_window_resize(SystemWindow win, int new_width,
+                                             int new_height);
 
   void save(const std::string &name);
   double get_current_time() const;
@@ -103,10 +100,7 @@ private:
   glm::vec3 clear_color = {1.0f, 0.0f, 0.0f};
   Console m_console;
   friend class WindowSystem;
-};
-
-class QuitAction : public Action {
-    virtual void operator()() override;
+  friend class GlobalLog;
 };
 
 #endif // GAME_HXX
