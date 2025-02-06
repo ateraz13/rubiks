@@ -37,6 +37,8 @@ private:
   std::string m_title = "Console";
   int m_width = 800, m_height = 600;
   std::map<std::string, std::unique_ptr<Action>> m_command_list;
+  float m_last_scroll = 0.0f;
+  float m_last_max_scroll = 0.0f;
   std::mutex m_lock;
 };
 

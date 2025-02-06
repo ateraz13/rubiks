@@ -69,18 +69,24 @@ void Console::draw() {
   ImGui::Separator();
 
   int footer_height = 20;
-  if (ImGui::BeginChild("ScrollingRegion", ImVec2(0, -20),
+  if (ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height),
                         ImGuiChildFlags_NavFlattened,
                         ImGuiWindowFlags_HorizontalScrollbar)) {
     if (ImGui::BeginPopupContextWindow()) {
-      // Add some popoup items.
+      // Add some popup items.
       ImGui::EndPopup();
     }
 
     ImGui::TextUnformatted("Sauce Default!");
-    // std::istringstream strm{m_output.str()};
+    // std::istringstream strm {m_output.str()};
     std::string line;
     ImGui::TextUnformatted(m_output.str().c_str());
+
+    if(m_last_scroll == m_last_max_scroll) {
+      ImGui::SetScrollHereY(1.0f);
+    }
+    m_last_scroll = ImGui::GetScrollY();
+    m_last_max_scroll = ImGui::GetScrollMaxY();
 
     ImGui::EndChild();
 
