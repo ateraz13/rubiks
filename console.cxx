@@ -94,8 +94,13 @@ void Console::draw() {
     bool refocus_prompt = false;
     auto prompt_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll;
     if(ImGui::InputText("prompt", &m_prompt[0], (m_prompt.size()-1), prompt_flags)) {
-      m_output << std::string(&m_prompt[0]) << std::endl;
+      auto input = std::string(&m_prompt[0]);
+      m_output << input << std::endl;
       std::fill(m_prompt.begin(), m_prompt.end(), '\0');
+      if(auto found = m_command_list.find(input);
+         found != m_command_list.end()) {
+        (*(found->second))();
+      }
       refocus_prompt = true;
     }
 
