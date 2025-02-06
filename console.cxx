@@ -9,13 +9,29 @@ Console::Console() {
   m_console_count += 1;
   std::stringstream strm;
   strm << "Console<" << m_console_count << ">";
-  m_output << "Sauce!" << std::endl;
-  m_output << "Sauce!" << std::endl;
-  m_output << "Sauce!" << std::endl;
-  m_output << "Sauce!" << std::endl;
   m_title = strm.str();
-  m_command_list["quit"] = std::make_unique<ActionCommand>(std::make_shared<QuitAction>());
-  m_command_list["print"] = std::make_unique<PrintCommand>();
+  m_command_list["quit"] = Command([](auto args) {
+    QuitAction action;
+    action.execute();
+  }).with_description("Quit the game.");
+
+  m_command_list["print"] = Command([&](auto args) {
+    for(auto arg: args) {
+      m_output << arg << " ";
+    }
+    m_output << "\n";
+  }).with_description("Print text into the console.");
+
+  m_command_list["help"] = Command([&](auto args) {
+    // TODO: Implement sub commands for help with individual commands
+    for(auto cmd: m_command_list) {
+      m_output << cmd.first << ": " << cmd.second.description() << "\n";
+    }
+  }).with_description("Print this help message.");
+
+  m_command_list["clear"] = Command([&](auto args) {
+    m_output.str("");
+  }).with_description("Clear the console.");
 }
 
 Console::~Console() { m_console_count -= 1; }
@@ -105,7 +121,7 @@ void Console::draw() {
       if(command.size() > 0) {
         if (auto found = m_command_list.find(command);
             found != m_command_list.end()) {
-          found->second->execute(args);
+          found->second.execute(args);
         } else {
           m_output << "Invalid command!\n";
         }
