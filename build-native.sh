@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+build_dir=./build-x86-64-linux
+do_clean_build=0
+do_build=0
+do_run=0
+toolchain=""
+script_name="$0"
+
+function print_help {
+    echo "$script_name [options...]"
+    echo "options: "
+    echo "    --help                   Print this message."
+    echo "    --build-dir <build_dir>  Use <build_dir> as the build directory."
+    echo "    --build                  Build the project."
+    echo "    --clean-build            Do clean build of the project(Rebuild)."
+    echo "    --run                    Run the project"
+    echo "    --build-and-run          Builds and runs the project."
+}
+
+next_capture_value=""
+for x in "$@"; do
+    case "$next_capture_value" in
+    "build_dir")
+        build_dir="$x"
+        next_capture_value=""
+        ;;
+    "toolchain")
+        toolchain="$x"
+        next_capture_value=""
+        ;;
+    *)
+        next_capture_value=""
+        case "$x" in
+        "--help")
+            print_help
+            exit 0
+            ;;
+        "--clean-build")
+            do_clean_build=1
+            do_build=1
+            ;;
+        "--build")
+            do_build=1
+            ;;
+        "--run")
+            do_run=1
+            ;;
+        "--build-and-run")
+            do_build=1
+            do_run=1
+            ;;
+        "--build-dir")
+            next_capture_value="build_dir"
+            ;;
+        "--toolchain")
+            next_capture_value="toolchain"
+            ;;
+        *)
+            echo "Invalid option: $x"
+            print_help
+            exit 1
+            ;;
+        esac
+        ;;
+    esac
+done
+
+if [[ "$do_build" -eq 1 && ! "$do_clean_build" -eq 1 && ! -d "$build_dir" ]] ; then
+    do_clean_build=1
+fi
+
+if [[ -d "$build_dir" && "$do_clean_build" -eq 1 ]]; then
+    rm -R "$build_dir"
+fi
+
+if [[ ! -d "$build_dir" && "$do_clean_build" -eq 1 ]]; then
+    rm -R "$build_dir"
+    if [ "$toolchain" != "" ]; then
+        cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1
+    else
+        cmake -B"$build_dir" -DUSE_GLAD=1
+    fi
+fi
+
+if [ "$do_build" -eq 1 ]; then
+    cmake --build "$build_dir" -- -j "$(nproc)"
+fi
+
+if [ "$do_run" -eq 1 ]; then
+    "$build_dir/rubiks"
+fi
