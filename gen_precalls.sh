@@ -1,21 +1,128 @@
 #!/usr/bin/env bash
 
-if [ $# -lt 5 ]; then
-    echo "$0 <input_files...> <pre_callback_func> <post_callback_func> <output_header_file> <output_source_file>"
-    exit 1
-fi
+pre_callback_func=""
+post_callback_func=""
+input_file_count=0
+input_files=()
+output_header=""
+output_source=""
 
-cmd_args=( "$@" )
-pre_callback_func=${cmd_args[$(($# - 4))]}
-post_callback_func=${cmd_args[$(($# - 3))]}
-input_file_count=$(($#-4))
-input_files=${@:1:$input_file_count}
-output_header=${cmd_args[$(($# - 2))]}
-output_source=${cmd_args[$(($# - 1))]}
+allow_default=0
+script_name="$0"
+
+print_help() {
+    cat <<EOF
+$script_name [options...]
+options:
+    --files <input_file...>         : Input files used to to scrape debug calls.
+    --output-src <output_source>    : Use <output_source> as the output C++ source file.
+    --output-header <output_header> : Use <output_header> as the output C++ header file.
+    --pre-cb <func_name>            : Use <func_name> as the name of the function called before every debug GL call.
+    --post-cb <func_name>           : Use <func_name> as the nane of the function called after every debug GL call.
+    --allow-default                 : Lets the program to use default options, for safety
+                                      the defaults have to be explicitely enabled so files don't
+                                      get overriden accidentally.
+EOF
+}
+
+next_capture=""
+for arg in "$@"; do
+    if [[ "$next_capture" == "files" && "$arg" == "--*" ]]; then
+        next_capture=""
+    fi
+    case "$next_capture" in
+    "pre-cb")
+        pre_callback_func="$arg"
+        next_capture=""
+        ;;
+    "post-cb")
+        post_callback_func="$arg"
+        next_capture=""
+        ;;
+    "output-src")
+        output_source="$arg"
+        next_capture=""
+        ;;
+    "output-header")
+        output_header="$arg"
+        next_capture=""
+        ;;
+    "files")
+        input_file_count=$(("$input_file_count" + 1))
+        input_files+=("$arg")
+        ;;
+    *)
+        case "$arg" in
+        "--allow-default")
+            allow_default=1
+            ;;
+        "--pre-cb")
+            next_capture="pre-cb"
+            ;;
+        "--post-cb")
+            next_capture="post-cb"
+            ;;
+        "--output-src")
+            next_capture="output-src"
+            ;;
+        "--output-header")
+            next_capture="output-header"
+            ;;
+        "--help")
+            print_help
+            exit
+            ;;
+        "--files")
+            next_capture="files"
+            ;;
+        *)
+            echo "Invalid argument: $arg"
+            print_help
+            ;;
+        esac
+        ;;
+    esac
+done
+
+default_or_exit() {
+    if [[ "$1" == "" ]]; then
+        if [[ "$allow_default" -eq 1 ]]; then
+            echo "$2"
+        else
+            echo "Error: Missing option and no default allowed!"
+            print_help
+            exit
+        fi
+    else
+        echo "$1"
+    fi
+}
+
+post_callback_func=$(default_or_exit "$post_callback_func" "postcall_callback")
+pre_callback_func=$(default_or_exit "$pre_callback_func" "precall_callback")
+output_source=$(default_or_exit "$output_source" gl_calls.cxx)
+output_header=$(default_or_exit "$output_header" gl_calls.hxx)
+
+for file in "${input_files[@]}" ; do
+    if [[ ! -f $file ]] ; then
+        echo "Error: File does not exit \"$file\". Aborting!"
+        exit 1
+    fi
+done
+
+if [[ "${#input_files[@]}" -eq 0 ]]; then
+    echo "Error: No input files specified"
+    print_help
+    exit
+fi
+# echo "post_callback_func =  $post_callback_func"
+# echo "pre_callback_func = $pre_callback_func"
+# echo "output_source = $output_source"
+# echo "output_header = $output_header"
 
 # void re
 {
-cat <<EOF
+    cat <<EOF
 #ifndef GL_CALLS_HXX
 #define GL_CALLS_HXX
 
@@ -62,16 +169,16 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
 }
 #endif //GL_CALLS_HXX
 EOF
-} > "$output_header"
+} >"$output_header"
 
 function add_to_header {
-   echo "$@" >> "$output_header"
+    echo "$@" >>"$output_header"
 }
 
-cat ${input_files} | awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }"  | grep -v glfw | grep -v glew | sort | uniq |
-while read -r func_name ; do
-    {
-    cat <<EOF
+cat ${input_files} | awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }" | grep -v glfw | grep -v glew | sort | uniq |
+    while read -r func_name; do
+        {
+            cat <<EOF
 #ifdef ULTRA_GL_DEBUG_INFO
   #define d$func_name(args...) \\
     dbg_gl_call($func_name, __FILE__, __LINE__, "$func_name", args)
@@ -80,13 +187,13 @@ while read -r func_name ; do
     $func_name(args)
 #endif //ULTRA_GL_DEBUG_INFO
 EOF
-    } >> "$output_header"
-done
+        } >>"$output_header"
+    done
 {
-cat <<EOF
+    cat <<EOF
 #include "$output_header"
 
 void dbg_gl_print_args_internal () {}
 void dbg_gl_print_args () {}
 EOF
-} > "$output_source"
+} >"$output_source"
