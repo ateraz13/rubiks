@@ -2,10 +2,12 @@
 
 build_dir=./build-x86-64-linux
 do_clean_build=0
+do_debug_build=0
 do_build=0
 do_run=0
 toolchain=""
 script_name="$0"
+debug_flags=""
 
 function print_help {
     echo "$script_name [options...]"
@@ -13,6 +15,7 @@ function print_help {
     echo "    --help                   Print this message."
     echo "    --build-dir <build_dir>  Use <build_dir> as the build directory."
     echo "    --build                  Build the project."
+    echo "    --debug                  Build with debug systems"
     echo "    --clean-build            Do clean build of the project(Rebuild)."
     echo "    --run                    Run the project"
     echo "    --build-and-run          Builds and runs the project."
@@ -35,6 +38,10 @@ for x in "$@"; do
         "--help")
             print_help
             exit 0
+            ;;
+        "--debug")
+            do_debug_build=1
+            debug_flags="-DCMAKE_BUILD_TYPE=Debug"
             ;;
         "--clean-build")
             do_clean_build=1
@@ -77,9 +84,9 @@ fi
 if [[ ! -d "$build_dir" && "$do_clean_build" -eq 1 ]]; then
     rm -R "$build_dir"
     if [ "$toolchain" != "" ]; then
-        cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1
+        cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1 "$debug_flags"
     else
-        cmake -B"$build_dir" -DUSE_GLAD=1
+        cmake -B"$build_dir" -DUSE_GLAD=1 "$debug_flags"
     fi
 fi
 
@@ -89,4 +96,17 @@ fi
 
 if [ "$do_run" -eq 1 ]; then
     "$build_dir/rubiks"
+fi
+
+if [[ ! -d "$build_dir/shaders" ]] ; then
+    if [[ -L "$build_dir/shaders" &&  $(readlink -f "$build_dir/shaders") == "$PWD/shaders" ]] ; then
+        unlink "$build_dir/shaders"
+        if [[ "$build_dir" = /* ]] ; then
+            echo "Creating symbolic link to shaders directory."
+            ln -s "$PWD/shaders" "$build_dir"
+        else
+            echo "Creating symbolic link to shaders directory."
+            ln -s "$PWD/shaders" "$PWD/$build_dir"
+        fi
+    fi
 fi
