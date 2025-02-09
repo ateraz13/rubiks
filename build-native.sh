@@ -3,6 +3,7 @@
 build_dir=./build-x86-64-linux
 do_clean_build=0
 do_debug_build=0
+do_gl_debug_build=0
 do_build=0
 do_run=0
 toolchain=""
@@ -63,6 +64,10 @@ for x in "$@"; do
         "--toolchain")
             next_capture_value="toolchain"
             ;;
+        "--gl-debug")
+            do_gl_debug_build=1
+            debug_flags="$debug_flags -DUSE_ULTRA_GL_DEBUG_INFO=1"
+            ;;
         *)
             echo "Invalid option: $x"
             print_help
@@ -72,6 +77,11 @@ for x in "$@"; do
         ;;
     esac
 done
+
+if [[ "$do_gl_debug_build" -eq 1 ]] ; then
+    bash $(find -name "*.cxx") gen_precalls.sh precall_callback postcall_callback gl_calls.hxx gl_calls.hxx
+
+fi
 
 if [[ "$do_build" -eq 1 && ! "$do_clean_build" -eq 1 && ! -d "$build_dir" ]] ; then
     do_clean_build=1

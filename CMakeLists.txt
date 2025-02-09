@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.10)
 
 project(rubiks)
 
@@ -15,7 +15,10 @@ set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx sh
 file(GLOB IMGUI_SOURCE_FILES extern/imgui/*.cpp)
 set(IMGUI_SOURCE_FILES ${IMGUI_SOURCE_FILES} extern/imgui/backends/imgui_impl_glfw.cpp extern/imgui/backends/imgui_impl_opengl3.cpp)
 
-# add_definitions(USE_GLAD 1)
+if(USE_ULTRA_GL_DEBUG_INFO)
+  add_compile_definitions(ULTRA_GL_DEBUG_INFO=1)
+endif()
+
 if(USE_GLAD)
   set(GLAD_ROOT_DIR ${PROJECT_SOURCE_DIR}/extern/glad)
   set(GLAD_INCLUDE_DIR ${GLAD_ROOT_DIR}/include)
