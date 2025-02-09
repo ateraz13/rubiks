@@ -11,15 +11,17 @@ script_name="$0"
 debug_flags=""
 
 function print_help {
-    echo "$script_name [options...]"
-    echo "options: "
-    echo "    --help                   Print this message."
-    echo "    --build-dir <build_dir>  Use <build_dir> as the build directory."
-    echo "    --build                  Build the project."
-    echo "    --debug                  Build with debug systems"
-    echo "    --clean-build            Do clean build of the project(Rebuild)."
-    echo "    --run                    Run the project"
-    echo "    --build-and-run          Builds and runs the project."
+    cat <<EOF
+$script_name [options...]
+options:
+    --help                   Print this message.
+    --build-dir <build_dir>  Use <build_dir> as the build directory.
+    --build                  Build the project.
+    --debug                  Build with debug systems
+    --clean-build            Do clean build of the project(Rebuild).
+    --run                    Run the project
+    --build-and-run          Builds and runs the project.
+EOF
 }
 
 next_capture_value=""
