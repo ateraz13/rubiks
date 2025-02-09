@@ -14,13 +14,15 @@ function print_help {
     cat <<EOF
 $script_name [options...]
 options:
-    --help                   Print this message.
-    --build-dir <build_dir>  Use <build_dir> as the build directory.
-    --build                  Build the project.
-    --debug                  Build with debug systems
-    --clean-build            Do clean build of the project(Rebuild).
-    --run                    Run the project
-    --build-and-run          Builds and runs the project.
+    --help                  : Print this message.
+    --build-dir <build_dir> : Use <build_dir> as the build directory.
+    --build                 : Build the project.
+    --debug                 : Build with debug systems
+    --clean-build           : Do clean build of the project(Rebuild).
+    --run                   : Run the project.
+                              If the build directory is absent it also builds
+                              the project beforehand.
+    --build-and-run         : Builds and runs the project.
 EOF
 }
 
@@ -82,7 +84,10 @@ done
 
 if [[ "$do_gl_debug_build" -eq 1 ]] ; then
     bash $(find -name "*.cxx") gen_precalls.sh precall_callback postcall_callback gl_calls.hxx gl_calls.hxx
+fi
 
+if [[ ! -d "$build_dir" && "$do_run" -eq 1 && ! "$do_build" -eq 1 ]] ; then
+    do_build=1
 fi
 
 if [[ "$do_build" -eq 1 && ! "$do_clean_build" -eq 1 && ! -d "$build_dir" ]] ; then
@@ -106,10 +111,6 @@ if [ "$do_build" -eq 1 ]; then
     cmake --build "$build_dir" -- -j "$(nproc)"
 fi
 
-if [ "$do_run" -eq 1 ]; then
-    "$build_dir/rubiks"
-fi
-
 if [[ ! -d "$build_dir/shaders" ]] ; then
     if [[ -L "$build_dir/shaders" &&  $(readlink -f "$build_dir/shaders") == "$PWD/shaders" ]] ; then
         unlink "$build_dir/shaders"
@@ -122,3 +123,8 @@ if [[ ! -d "$build_dir/shaders" ]] ; then
         fi
     fi
 fi
+
+if [ "$do_run" -eq 1 ]; then
+    "$build_dir/rubiks"
+fi
+
