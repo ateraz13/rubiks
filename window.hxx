@@ -13,25 +13,12 @@
 using SystemWindowHandle = GLFWwindow *;
 using KeyboardKey = KeyCode;
 
-struct SystemWindowConfig {
-public:
-  struct GLVersion {
-    int major = 4, minor = 5;
-  };
-  int width = 800, height = 600;
-  std::optional<GLVersion> opengl_version = {};
-  std::string title = "No title";
-  std::string purpose = "undefined";
-  bool use_imgui = false;
-
-private:
-  SystemWindowConfig();
-  friend class SystemWindowBuilder;
-  friend class SystemWindow;
-};
+struct SystemWindowConfig;
+struct SystemWindowInternal;
 
 class SystemWindow {
 public:
+  using ResizeCB = std::function<void(class SystemWindow, uint32_t, uint32_t)>;
   void resize(int w, int h);
   glm::ivec2 size();
 
@@ -41,9 +28,6 @@ public:
   SystemWindow &operator=(SystemWindow &&other);
   SystemWindow();
   ~SystemWindow();
-
-  using ResizeCB = std::function<void(SystemWindow, uint32_t, uint32_t)>;
-
 
   void bind_context();
   void swap_buffers();
@@ -59,12 +43,7 @@ private:
   void init(const SystemWindowConfig &win);
   void clean_up();
 
-  struct Internal {
-    SystemWindowHandle win_handle = nullptr;
-    int ref_count = 0;
-    SystemWindowConfig initial_config;
-    ResizeCB resize_cb;
-  } *m_internal = nullptr;
+  SystemWindowInternal *m_internal = nullptr;
 
   friend class SystemWindowBuilder;
   friend class WindowSystem;
@@ -72,12 +51,33 @@ private:
                                   const SystemWindow &window);
 };
 
+using SystemWindowResizeCB = SystemWindow::ResizeCB;
+
+struct SystemWindowConfig {
+public:
+  struct GLVersion {
+    int major = 4, minor = 5;
+  };
+  int width = 800, height = 600;
+  std::optional<GLVersion> opengl_version = {};
+  std::optional<SystemWindowResizeCB> resize_cb = std::nullopt;
+  std::string title = "No title";
+  std::string purpose = "undefined";
+  bool use_imgui = false;
+
+private:
+  SystemWindowConfig();
+  friend class SystemWindowBuilder;
+  friend struct SystemWindowInternal;
+  friend class SystemWindow;
+};
 class SystemWindowBuilder {
 public:
   SystemWindowBuilder &with_size(int w, int h);
   SystemWindowBuilder &with_opengl(int major_version, int minor_version);
   SystemWindowBuilder &with_title(const std::string &title);
   SystemWindowBuilder &with_imgui();
+  SystemWindowBuilder &with_resize_cb(SystemWindowResizeCB cb);
   SystemWindow build();
 
   SystemWindowBuilder(const SystemWindowBuilder &other) = delete;
@@ -89,6 +89,7 @@ private:
   SystemWindowBuilder();
 
   SystemWindowConfig m_config;
+  friend struct SystemWindowInternal;
   friend class WindowSystem;
 };
 
@@ -96,10 +97,10 @@ SystemWindowBuilder sys_window();
 
 class WindowSystem {
 public:
+  using ResizeCB = std::function<void(SystemWindow, uint32_t, uint32_t)>;
   std::optional<SystemWindow> find_system_window(SystemWindowHandle handle);
   SystemWindowBuilder new_window(std::string window_purpose);
 
-  static WindowSystem &instance();
   ~WindowSystem();
 
   WindowSystem(const WindowSystem &other) = delete;
@@ -125,7 +126,9 @@ private:
   std::map<SystemWindowHandle, SystemWindow> m_sw_handle_lookup;
   std::map<std::string, SystemWindow> m_system_windows;
 
+  friend class SystemWindowInternal;
   friend class SystemWindow;
+  friend class App;
 };
 
 enum struct KeyState { PRESSED, RELEASED };
@@ -139,6 +142,15 @@ struct KeyEvent {
   bool operator==(const KeyEvent &other) const;
   bool operator>(const KeyEvent &other) const;
   friend std::ostream &operator<<(std::ostream &strm, const KeyEvent &event);
+};
+
+struct SystemWindowInternal {
+public:
+  SystemWindowInternal();
+  SystemWindowHandle win_handle = nullptr;
+  int ref_count = 0;
+  SystemWindowConfig initial_config;
+  SystemWindowResizeCB resize_cb;
 };
 
 std::ostream &operator<<(std::ostream &strm, const KeyState &state);

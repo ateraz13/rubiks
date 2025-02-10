@@ -4,6 +4,7 @@
 #include "glog.hxx"
 #include "utility.hxx"
 #include "window.hxx"
+#include "app.hxx"
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <cmath>
@@ -25,25 +26,17 @@ const char *MAIN_WINDOW_DEFAULT_TITLE = "Rubiks";
 
 GlobalLog glog;
 
-Game &Game::instance() {
-  static auto &game = Game::init();
-  return game;
-}
-
 void glfw_error_callback(int error, const char *desc) {
   fprintf(stderr, "GLFW Error: %s\n", desc);
 }
 
 Game::Game() {}
 
-Game &Game::init() {
-  static Game game;
+void Game::init() {
   std::cout << "Initialising game!\n";
-  game.init_window_system();
-  game.init_input_system();
-  game.m_gfx.init();
-
-  return game;
+  init_window_system();
+  init_input_system();
+  m_gfx.init();
 }
 
 Game::~Game() {
@@ -53,14 +46,14 @@ Game::~Game() {
 
 void Game::acknowledge_main_window_resize(SystemWindow win, int width,
                                           int height) {
-  auto &inst = Game::instance();
+  auto &inst = App::instance().game();
   std::cout << "Window resized: width = " << width << ", height = " << height
             << "\n";
   win.bind_context();
   inst.m_gfx.viewport_size(width, height);
 }
 
-void QuitAction::execute() { Game::instance().stop(); }
+void QuitAction::execute() { App::instance().game().stop(); }
 
 void Game::init_input_system() {
 
@@ -77,8 +70,7 @@ void Game::init_input_system() {
 
 void Game::init_window_system() {
 
-  m_main_window =
-      WindowSystem::instance()
+  m_main_window = App::instance().win_sys()
           .new_window("main-window")
           .with_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT)
           .with_title("Rubiks!")
@@ -296,9 +288,10 @@ void RubiksCube::reset() { std::cout << "reset" << std::endl; }
 double Game::current_time() const { return m_current_time; }
 
 void Game::change_viewport_size(int width, int height) {
-  Game::instance().m_gfx.viewport_size(width, height);
+  App::instance().game().m_gfx.viewport_size(width, height);
 }
 
 GlobalLog::GlobalLog()
     : std::ostream(
-          dynamic_cast<std::streambuf *>(&(Game::instance().m_console))) {}
+          dynamic_cast<std::streambuf *>(&(App::instance().game().m_console))) {}
+

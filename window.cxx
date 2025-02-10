@@ -1,12 +1,13 @@
 #include "window.hxx"
 #include "except.hxx"
 #include "game.hxx"
+#include "glog.hxx"
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include "app.hxx"
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <optional>
-#include "glog.hxx"
 
 static std::atomic<bool> is_glfw_initialized = false;
 static std::atomic<size_t> system_window_count = 0;
@@ -73,9 +74,11 @@ SystemWindow &SystemWindow::operator=(const SystemWindow &other) {
 }
 
 void SystemWindow::init(const SystemWindowConfig &config) {
-  { SystemWindow(std::move(*this)); } // Unreference my self
+  {
+    SystemWindow(std::move(*this));
+  } // Unreference my self
 
-  m_internal = new SystemWindow::Internal();
+  m_internal = new SystemWindowInternal();
 
   if (!is_glfw_initialized && !glfwInit()) {
     throw WindowingLibraryInitFailed("Failed to initialize glfw!\n");
@@ -123,6 +126,10 @@ void SystemWindow::init(const SystemWindowConfig &config) {
   m_internal->win_handle = win;
   m_internal->initial_config = config;
   m_internal->ref_count = 1;
+
+  if (config.resize_cb) {
+    m_internal->resize_cb = *config.resize_cb;
+  }
 
   WindowSystem::register_handle(win, *this);
 }
@@ -173,26 +180,23 @@ SystemWindowBuilder &SystemWindowBuilder::with_title(const std::string &title) {
 SystemWindow SystemWindowBuilder::build() {
   auto win = SystemWindow();
   win.init(m_config);
-  WindowSystem::instance().register_window(m_config.purpose, win);
+  App::instance().win_sys().register_window(m_config.purpose, win);
   return std::move(win);
 }
 
 WindowSystem::WindowSystem() {}
 
-WindowSystem &WindowSystem::instance() {
-  static WindowSystem inst;
-  return inst;
-}
-
 void WindowSystem::redirect_resize_cb(GLFWwindow *handle, int width,
                                       int height) {
-  auto &ws = WindowSystem::instance();
+  auto &ws = App::instance().win_sys();
   auto win = ws.find_system_window(handle);
 
   std::cout << "Window size changed!\n";
   if (win) {
     std::cout << "Calling resize callback!\n";
-    win->m_internal->resize_cb(*win, width, height);
+    if (win->m_internal->resize_cb) {
+      win->m_internal->resize_cb(*win, width, height);
+    }
   }
 }
 
@@ -202,8 +206,8 @@ void WindowSystem::redirect_inputs(GLFWwindow *handle, int keycode,
 
   KeyCode key{keycode};
 
-  auto &game = Game::instance();
-  auto &ws = WindowSystem::instance();
+  auto &game = App::instance().game();
+  auto &ws = App::instance().win_sys();
   auto win = ws.find_system_window(handle);
 
   if (!win) {
@@ -242,21 +246,24 @@ WindowSystem::find_system_window(SystemWindowHandle handle) {
 void WindowSystem::poll_events() { glfwPollEvents(); }
 
 bool SystemWindow::operator<(const SystemWindow &other) const {
-  if (other.m_internal->win_handle == m_internal->win_handle && other.m_internal->ref_count != m_internal->ref_count) {
+  if (other.m_internal->win_handle == m_internal->win_handle &&
+      other.m_internal->ref_count != m_internal->ref_count) {
     std::cout << "WARNING: SystemWindow with multiple ref conters!";
   }
   return m_internal->win_handle < other.m_internal->win_handle;
 }
 
 bool SystemWindow::operator==(const SystemWindow &other) const {
-  if (other.m_internal->win_handle == m_internal->win_handle && other.m_internal->ref_count != m_internal->ref_count) {
+  if (other.m_internal->win_handle == m_internal->win_handle &&
+      other.m_internal->ref_count != m_internal->ref_count) {
     std::cout << "WARNING: SystemWindow with multiple counters!";
   }
   return m_internal->win_handle == other.m_internal->win_handle;
 }
 
 bool SystemWindow::operator>(const SystemWindow &other) const {
-  if (other.m_internal->win_handle == m_internal->win_handle && other.m_internal->ref_count != m_internal->ref_count) {
+  if (other.m_internal->win_handle == m_internal->win_handle &&
+      other.m_internal->ref_count != m_internal->ref_count) {
     std::cout << "WARNING: SystemWindow with multiple counters!";
   }
   return m_internal->win_handle > other.m_internal->win_handle;
@@ -286,15 +293,18 @@ bool KeyEvent::operator>(const KeyEvent &other) const {
   return window > other.window;
 }
 
-WindowSystem::~WindowSystem() { glfwTerminate(); }
+WindowSystem::~WindowSystem() {
+  glfwTerminate();
+  is_glfw_initialized = false;
+}
 
 void WindowSystem::register_window(std::string win_purpose, SystemWindow win) {
-  auto &inst = WindowSystem::instance();
+  auto &inst = App::instance().win_sys();
   inst.m_system_windows[win_purpose] = win;
 }
 
 void WindowSystem::unregister_window(std::string purpose) {
-  auto &inst = WindowSystem::instance();
+  auto &inst = App::instance().win_sys();
   auto it = inst.m_system_windows.find(purpose);
   if (it != inst.m_system_windows.end()) {
     inst.m_system_windows.erase(it);
@@ -302,7 +312,7 @@ void WindowSystem::unregister_window(std::string purpose) {
 }
 
 void WindowSystem::purge_window(SystemWindow win) {
-  auto &inst = WindowSystem::instance();
+  auto &inst = App::instance().win_sys();
   for (auto it = inst.m_system_windows.begin();
        it != inst.m_system_windows.end();) {
     if (it->second == win) {
@@ -324,13 +334,13 @@ void WindowSystem::purge_window(SystemWindow win) {
 
 void WindowSystem::register_handle(SystemWindowHandle handle,
                                    SystemWindow win) {
-  auto &inst = WindowSystem::instance();
+  auto &inst = App::instance().win_sys();
   inst.m_sw_handle_lookup[handle] = win;
 }
 
 void WindowSystem::window_resized_cb(SystemWindowHandle handle, uint32_t w,
                                      uint32_t h) {
-  auto &inst = WindowSystem::instance();
+  auto &inst = App::instance().win_sys();
   auto it = inst.m_sw_handle_lookup.find(handle);
   if (it != inst.m_sw_handle_lookup.end()) {
     it->second.m_internal->resize_cb(it->second, w, h);
@@ -344,7 +354,7 @@ std::ostream &operator<<(std::ostream &strm, const KeyEvent &event) {
 }
 
 std::ostream &operator<<(std::ostream &strm, const SystemWindow &window) {
-  if(window.m_internal) {
+  if (window.m_internal) {
     strm << "GLFWwindow* (" << window.m_internal->win_handle << ")";
   } else {
     strm << "[Null Window]";
@@ -372,7 +382,15 @@ SystemWindowBuilder &SystemWindowBuilder::with_imgui() {
   return *this;
 }
 
-void SystemWindow::set_resize_cb(ResizeCB resize_cb) {
+void SystemWindow::set_resize_cb(SystemWindowResizeCB resize_cb) {
   assert(m_internal != nullptr);
   m_internal->resize_cb = resize_cb;
 }
+
+SystemWindowBuilder &
+SystemWindowBuilder::with_resize_cb(SystemWindowResizeCB cb) {
+  m_config.resize_cb = cb;
+  return *this;
+}
+
+SystemWindowInternal::SystemWindowInternal() {}

@@ -44,8 +44,6 @@ class Game {
 public:
   ~Game();
 
-  static Game &instance();
-
   void start();
   void update();
   void stop();
@@ -60,6 +58,9 @@ public:
   Game(const Game &other) = delete;
 
   double current_time() const;
+
+  WindowSystem& win_sys();
+  const WindowSystem& win_sys() const;
 
 private:
   // enum Action {
@@ -79,7 +80,7 @@ private:
   //   ACTION_COUNT // Always last
   // };
 
-  static Game &init();
+  void init();
   Game();
 
   void update_current_time();
@@ -92,15 +93,16 @@ private:
   uint64_t delta_time = 0;
   bool m_is_running = false;
   float m_animation_speed = 1.0f;
+  gfx::Graphics m_gfx;
   std::optional<SystemWindow> m_main_window;
   std::queue<Action> m_action_queue;
   std::map<KeyEvent, std::unique_ptr<Action>> m_keymap;
-  gfx::Graphics m_gfx;
   std::chrono::time_point<std::chrono::steady_clock> m_last_frame_timepoint;
   glm::vec3 clear_color = {1.0f, 0.0f, 0.0f};
   Console m_console;
   friend class WindowSystem;
   friend class GlobalLog;
+  friend class App;
 };
 
 #endif // GAME_HXX
