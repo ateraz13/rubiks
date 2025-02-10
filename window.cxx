@@ -10,6 +10,7 @@
 #include <optional>
 
 static std::atomic<bool> is_glfw_initialized = false;
+static std::atomic<bool> is_imgui_initialized = false;
 static std::atomic<size_t> system_window_count = 0;
 
 SystemWindow::SystemWindow() : m_internal(nullptr) {}
@@ -31,18 +32,21 @@ void SystemWindow::clean_up() {
       std::cout << "SystemWindow: ref count below zero!\n";
     }
     if (m_internal->ref_count == 0) {
-      if (m_internal->initial_config.use_imgui) {
-        std::cout << "Shutting down imgui!\n";
+      system_window_count -= 1;
+      std::cout << "Destroying window!\n";
+      glfwDestroyWindow(m_internal->win_handle);
+      delete m_internal;
+    }
+    if (system_window_count == 0) {
+      if(is_imgui_initialized) {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
       }
-      std::cout << "Destroying window!\n";
-      system_window_count -= 1;
+      glfwTerminate();
       is_glfw_initialized = false;
-      glfwDestroyWindow(m_internal->win_handle);
-      delete m_internal;
     }
+    m_internal = nullptr;
   }
 }
 
@@ -108,7 +112,7 @@ void SystemWindow::init(const SystemWindowConfig &config) {
   glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
   glfwSetWindowSizeCallback(win, &WindowSystem::redirect_resize_cb);
 
-  if (config.use_imgui && config.opengl_version) {
+  if (config.opengl_version && !is_imgui_initialized) {
     std::cout << "Init imgui!\n!";
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -120,6 +124,7 @@ void SystemWindow::init(const SystemWindowConfig &config) {
 
     ImGui_ImplGlfw_InitForOpenGL(win, true);
     ImGui_ImplOpenGL3_Init("#version 450");
+    is_imgui_initialized = true;
   }
 
   system_window_count += 1;
@@ -294,8 +299,6 @@ bool KeyEvent::operator>(const KeyEvent &other) const {
 }
 
 WindowSystem::~WindowSystem() {
-  glfwTerminate();
-  is_glfw_initialized = false;
 }
 
 void WindowSystem::register_window(std::string win_purpose, SystemWindow win) {
@@ -375,11 +378,6 @@ std::ostream &operator<<(std::ostream &strm, const KeyState &state) {
     break;
   }
   return strm;
-}
-
-SystemWindowBuilder &SystemWindowBuilder::with_imgui() {
-  m_config.use_imgui = true;
-  return *this;
 }
 
 void SystemWindow::set_resize_cb(SystemWindowResizeCB resize_cb) {

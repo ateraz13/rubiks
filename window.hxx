@@ -63,7 +63,6 @@ public:
   std::optional<SystemWindowResizeCB> resize_cb = std::nullopt;
   std::string title = "No title";
   std::string purpose = "undefined";
-  bool use_imgui = false;
 
 private:
   SystemWindowConfig();
@@ -76,7 +75,6 @@ public:
   SystemWindowBuilder &with_size(int w, int h);
   SystemWindowBuilder &with_opengl(int major_version, int minor_version);
   SystemWindowBuilder &with_title(const std::string &title);
-  SystemWindowBuilder &with_imgui();
   SystemWindowBuilder &with_resize_cb(SystemWindowResizeCB cb);
   SystemWindow build();
 
