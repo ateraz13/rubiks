@@ -147,5 +147,5 @@ void ShaderProgram::use() const {
     if(m_id == 0) {
         throw std::runtime_error("Tried to use invalid shader program!\n");
     }
-    dglUseProgram(m_id);
+    inspect_glUseProgram(m_id);
 }

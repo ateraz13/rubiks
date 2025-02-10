@@ -62,10 +62,10 @@ for arg in "$@"; do
         "--post-cb")
             next_capture="post-cb"
             ;;
-        "--output-src")
+        "--output-src" | "--out-src" | "--output-source" | "--cxx")
             next_capture="output-src"
             ;;
-        "--output-header")
+        "--output-header" | "--hxx")
             next_capture="output-header"
             ;;
         "--help")
@@ -169,31 +169,34 @@ static std::invoke_result_t<GL_Func, Args...> dbg_gl_call(GL_Func gl_func, const
 }
 #endif //GL_CALLS_HXX
 EOF
-} >"$output_header"
+
+} > "$output_header"
 
 function add_to_header {
     echo "$@" >>"$output_header"
 }
 
-cat ${input_files} | awk "match(\$0, /\s+d(gl[^(]+)\([^)]*\)/, names){ print names[1] }" | grep -v glfw | grep -v glew | sort | uniq |
+cat ${input_files[@]} | awk "match(\$0, /\s+inspect_([^(]+)\([^)]*\)/, names){ print names[1] }" | grep -v glfw | grep -v glew | sort | uniq |
     while read -r func_name; do
         {
             cat <<EOF
-#ifdef ULTRA_GL_DEBUG_INFO
-  #define d$func_name(args...) \\
+#ifdef INSPECT_GL_DEBUG_INFO
+  #define inspect_$func_name(args...) \\
     dbg_gl_call($func_name, __FILE__, __LINE__, "$func_name", args)
 #else
-  #define d$func_name(args...) \\
+  #define inspect_$func_name(args...) \\
     $func_name(args)
-#endif //ULTRA_GL_DEBUG_INFO
+#endif //INSPECT_GL_DEBUG_INFO
+
 EOF
         } >>"$output_header"
     done
 {
-    cat <<EOF
+cat <<EOF
 #include "$output_header"
 
 void dbg_gl_print_args_internal () {}
 void dbg_gl_print_args () {}
 EOF
-} >"$output_source"
+} > "$output_source"
+

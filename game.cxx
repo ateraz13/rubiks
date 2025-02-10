@@ -83,10 +83,10 @@ void Game::init_window_system() {
           .with_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT)
           .with_title("Rubiks!")
           .with_opengl(4, 5)
+          .with_resize_cb(&Game::acknowledge_main_window_resize)
           .with_imgui()
           .build();
 
-  m_main_window->set_resize_cb(&Game::acknowledge_main_window_resize);
   m_main_window->bind_context();
 
   glfwSwapInterval(0);

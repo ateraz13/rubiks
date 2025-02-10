@@ -83,7 +83,9 @@ for x in "$@"; do
 done
 
 if [[ "$do_gl_debug_build" -eq 1 ]] ; then
-    bash $(find -name "*.cxx") gen_precalls.sh precall_callback postcall_callback gl_calls.hxx gl_calls.hxx
+    rm gl_calls.cxx gl_calls.hxx
+    mapfile -t source_files < <(find . -name "*.cxx")
+    bash gen_precalls.sh --pre-cb precall_callback --post-cb postcall_callback --hxx gl_calls.hxx --cxx gl_calls.cxx --files ${source_files[@]}
 fi
 
 if [[ ! -d "$build_dir" && "$do_run" -eq 1 && ! "$do_build" -eq 1 ]] ; then
