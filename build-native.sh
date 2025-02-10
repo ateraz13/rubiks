@@ -9,6 +9,8 @@ do_run=0
 toolchain=""
 script_name="$0"
 debug_flags=()
+cxx_flags=("-DCMAKE_EXPORT_COMPILE_COMMANDS=1")
+produce_lsp_extras=0
 
 function print_help {
     cat <<EOF
@@ -22,6 +24,8 @@ options:
     --run                   : Run the project.
                               If the build directory is absent it also builds
                               the project beforehand.
+    --lsp                   : Setup the project directory to be used with an LSP.
+                              e.g: compile_commands.json.
     --build-and-run         : Builds and runs the project.
 EOF
 }
@@ -72,6 +76,9 @@ for x in "$@"; do
             do_gl_debug_build=1
             debug_flags+=("-DPROVIDE_INSPECT_GL_DEBUG_INFO=1")
             ;;
+        "--lsp")
+            produce_lsp_extras=1
+            ;;
         *)
             echo "Invalid option: $x"
             print_help
@@ -81,6 +88,8 @@ for x in "$@"; do
         ;;
     esac
 done
+
+build_dir=$(cd "$build_dir" || exit ; pwd)
 
 if [[ "$do_gl_debug_build" -eq 1 ]] ; then
     rm gl_calls.cxx gl_calls.hxx
@@ -103,10 +112,17 @@ fi
 if [[ ! -d "$build_dir" && "$do_clean_build" -eq 1 ]]; then
     rm -R "$build_dir"
     if [ "$toolchain" != "" ]; then
-        cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1 ${debug_flags[@]}
+        cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1 ${debug_flags[@]} ${cxx_flags[@]}
     else
-        cmake -B"$build_dir" -DUSE_GLAD=1 ${debug_flags[@]}
+        cmake -B"$build_dir" -DUSE_GLAD=1 ${debug_flags[@]} ${cxx_flags[@]}
     fi
+fi
+
+if [[ -d "$build_dir" && "$produce_lsp_extras" -eq 1 ]] ; then
+    if [[ -L "$PWD/compile_commands.json" ]] ; then
+        unlink "$PWD/compile_commands.json"
+    fi
+    ln -s "$build_dir/compile_commands.json" "$PWD/compile_commands.json"
 fi
 
 if [ "$do_build" -eq 1 ]; then
@@ -116,13 +132,7 @@ fi
 if [[ ! -d "$build_dir/shaders" ]] ; then
     if [[ -L "$build_dir/shaders" &&  $(readlink -f "$build_dir/shaders") == "$PWD/shaders" ]] ; then
         unlink "$build_dir/shaders"
-        if [[ "$build_dir" = /* ]] ; then
-            echo "Creating symbolic link to shaders directory."
-            ln -s "$PWD/shaders" "$build_dir"
-        else
-            echo "Creating symbolic link to shaders directory."
-            ln -s "$PWD/shaders" "$PWD/$build_dir"
-        fi
+        ln -s "$PWD/shaders" "$build_dir"
     fi
 fi
 
