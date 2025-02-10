@@ -9,7 +9,7 @@ do_run=0
 toolchain=""
 script_name="$0"
 debug_flags=()
-cxx_flags=("-DCMAKE_EXPORT_COMPILE_COMMANDS=1")
+cxx_flags=()
 produce_lsp_extras=0
 
 function print_help {
@@ -109,21 +109,26 @@ if [[ -d "$build_dir" && "$do_clean_build" -eq 1 ]]; then
     rm -R "$build_dir"
 fi
 
+if [[ "$produce_lsp_extras" -eq 1 ]] ; then
+    cxx_flags+=("-DCMAKE_EXPORT_COMPILE_COMMANDS=1")
+fi
+
 if [[ ! -d "$build_dir" && "$do_clean_build" -eq 1 ]]; then
     rm -R "$build_dir"
+
     if [ "$toolchain" != "" ]; then
         cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1 ${debug_flags[@]} ${cxx_flags[@]}
     else
         cmake -B"$build_dir" -DUSE_GLAD=1 ${debug_flags[@]} ${cxx_flags[@]}
     fi
+    if [[ -d "$build_dir" && "$produce_lsp_extras" -eq 1 ]] ; then
+        if [[ -L "$PWD/compile_commands.json" ]] ; then
+            unlink "$PWD/compile_commands.json"
+        fi
+        ln -s "$build_dir/compile_commands.json" "$PWD/compile_commands.json"
+    fi
 fi
 
-if [[ -d "$build_dir" && "$produce_lsp_extras" -eq 1 ]] ; then
-    if [[ -L "$PWD/compile_commands.json" ]] ; then
-        unlink "$PWD/compile_commands.json"
-    fi
-    ln -s "$build_dir/compile_commands.json" "$PWD/compile_commands.json"
-fi
 
 if [ "$do_build" -eq 1 ]; then
     cmake --build "$build_dir" -- -j "$(nproc)"
