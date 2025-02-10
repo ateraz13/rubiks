@@ -8,7 +8,7 @@ do_build=0
 do_run=0
 toolchain=""
 script_name="$0"
-debug_flags=""
+debug_flags=()
 
 function print_help {
     cat <<EOF
@@ -46,7 +46,7 @@ for x in "$@"; do
             ;;
         "--debug")
             do_debug_build=1
-            debug_flags="-DCMAKE_BUILD_TYPE=Debug"
+            debug_flags+=("-DCMAKE_BUILD_TYPE=Debug")
             ;;
         "--clean-build")
             do_clean_build=1
@@ -70,7 +70,7 @@ for x in "$@"; do
             ;;
         "--gl-debug")
             do_gl_debug_build=1
-            debug_flags="$debug_flags -DUSE_ULTRA_GL_DEBUG_INFO=1"
+            debug_flags+=("-DPROVIDE_INSPECT_GL_DEBUG_INFO=1")
             ;;
         *)
             echo "Invalid option: $x"
@@ -103,9 +103,9 @@ fi
 if [[ ! -d "$build_dir" && "$do_clean_build" -eq 1 ]]; then
     rm -R "$build_dir"
     if [ "$toolchain" != "" ]; then
-        cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1 "$debug_flags"
+        cmake -B"$build_dir" -DCMAKE_TOOLCHAIN_FILE="$PWD/$toolchain.cmake" -DUSE_GLAD=1 ${debug_flags[@]}
     else
-        cmake -B"$build_dir" -DUSE_GLAD=1 "$debug_flags"
+        cmake -B"$build_dir" -DUSE_GLAD=1 ${debug_flags[@]}
     fi
 fi
 
