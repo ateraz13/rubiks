@@ -8,6 +8,7 @@ public:
   App();
   ~App();
 
+
   static App& instance();
 
   App(const App &other) = delete;

@@ -1,12 +1,11 @@
 #include "app.hxx"
 
-App::App() {}
-
 App& App::instance() {
-    static App app;
-    return app;
+    static App inst;
+    return inst;
 }
 
+App::App() {}
 App::~App() {}
 
 void App::init() {
