@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <tuple>
+#include <imgui.h>
 
 using SystemWindowHandle = GLFWwindow *;
 using KeyboardKey = KeyCode;
@@ -149,6 +150,7 @@ public:
   int ref_count = 0;
   SystemWindowConfig initial_config;
   SystemWindowResizeCB resize_cb;
+  ImGuiContext *imgui_context = nullptr;
 };
 
 std::ostream &operator<<(std::ostream &strm, const KeyState &state);

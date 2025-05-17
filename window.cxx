@@ -7,11 +7,15 @@
 #include "app.hxx"
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include "gl.hxx"
 #include <optional>
 
-static std::atomic<bool> is_glfw_initialized = false;
-static std::atomic<bool> is_imgui_initialized = false;
-static std::atomic<size_t> system_window_count = 0;
+// FIXME: These won't work by them self, mutex is required and it needs to be locked
+// when creating and destoying glfw and imgui because two threads can do so
+// concurently. Without a locked mutex we shouldn't proceed to do anything
+// and after it has been unlocked then we can manipulate these variables.
+static std::atomic<bool> is_glfw_initialized(false);
+static std::atomic<size_t> system_window_count(0);
 
 SystemWindow::SystemWindow() : m_internal(nullptr) {}
 
@@ -29,24 +33,32 @@ void SystemWindow::clean_up() {
     std::cout << "Destroying window instance!\n";
     m_internal->ref_count -= 1;
     if (m_internal->ref_count < 0) {
-      std::cout << "SystemWindow: ref count below zero!\n";
+      std::cout << "WARNING SystemWindow: ref count below zero!\n";
     }
     if (m_internal->ref_count == 0) {
       system_window_count -= 1;
+
+      auto bound_win = glfwGetCurrentContext();
+      bind_context();
+
+      if(m_internal->imgui_context != nullptr) {
+          std::cout << "SystemWindow: Destroying imgui context!\n";
+          ImGui::SetCurrentContext(m_internal->imgui_context);
+          ImGui_ImplOpenGL3_Shutdown();
+          ImGui_ImplGlfw_Shutdown();
+          ImGui::DestroyContext(m_internal->imgui_context);
+          m_internal->imgui_context = nullptr;
+      }
       std::cout << "Destroying window!\n";
       glfwDestroyWindow(m_internal->win_handle);
       delete m_internal;
+      m_internal = nullptr;
+      glfwMakeContextCurrent(bound_win);
     }
-    if (system_window_count == 0) {
-      if(is_imgui_initialized) {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-      }
-      glfwTerminate();
-      is_glfw_initialized = false;
-    }
-    m_internal = nullptr;
+  }
+  if (system_window_count == 0 && is_glfw_initialized) {
+    glfwTerminate();
+    is_glfw_initialized = false;
   }
 }
 
@@ -111,22 +123,6 @@ void SystemWindow::init(const SystemWindowConfig &config) {
 
   glfwSetKeyCallback(win, &WindowSystem::redirect_inputs);
   glfwSetWindowSizeCallback(win, &WindowSystem::redirect_resize_cb);
-
-  if (config.opengl_version && !is_imgui_initialized) {
-    std::cout << "Init imgui!\n!";
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |=
-        ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    io.ConfigFlags |=
-        ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
-
-    ImGui_ImplGlfw_InitForOpenGL(win, true);
-    ImGui_ImplOpenGL3_Init("#version 450");
-    is_imgui_initialized = true;
-  }
-
   system_window_count += 1;
   m_internal->win_handle = win;
   m_internal->initial_config = config;
@@ -137,6 +133,21 @@ void SystemWindow::init(const SystemWindowConfig &config) {
   }
 
   WindowSystem::register_handle(win, *this);
+
+  if (config.opengl_version && m_internal->imgui_context == nullptr) {
+    std::cout << "Init imgui!\n!";
+    IMGUI_CHECKVERSION();
+    m_internal->imgui_context = ImGui::CreateContext();
+    ImGui::SetCurrentContext(m_internal->imgui_context);
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |=
+        ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |=
+        ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
+
+    ImGui_ImplGlfw_InitForOpenGL(win, true);
+    ImGui_ImplOpenGL3_Init("#version 450");
+  }
 }
 
 void SystemWindow::swap_buffers() {
@@ -151,6 +162,7 @@ void SystemWindow::swap(SystemWindow &a, SystemWindow &b) {
 void SystemWindow::bind_context() {
   assert(m_internal != nullptr);
   glfwMakeContextCurrent(m_internal->win_handle);
+  ImGui::SetCurrentContext(m_internal->imgui_context);
 }
 
 SystemWindowBuilder WindowSystem::new_window(std::string window_purpose) {
