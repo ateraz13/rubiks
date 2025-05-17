@@ -8,7 +8,7 @@ add_subdirectory(extern/glfw-3.4)
 
 find_package(glm CONFIG REQUIRED)
 
-set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx shader.cxx gl_calls.cxx window.cxx keys.cxx console.cxx command.cxx)
+set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx shader.cxx gl_calls.cxx window.cxx keys.cxx console.cxx command.cxx app.cxx)
 
 file(GLOB IMGUI_SOURCE_FILES extern/imgui/*.cpp)
 set(IMGUI_SOURCE_FILES ${IMGUI_SOURCE_FILES} extern/imgui/backends/imgui_impl_glfw.cpp extern/imgui/backends/imgui_impl_opengl3.cpp)
