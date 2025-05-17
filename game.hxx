@@ -63,23 +63,6 @@ public:
   const WindowSystem& win_sys() const;
 
 private:
-  // enum Action {
-  //   QUIT_GAME,
-  //   ROTATE_1ST_COLUMN_FORWARD,
-  //   ROTATE_2ND_COLUMN_FORWARD,
-  //   ROTATE_3RD_COLUMN_FORWARD,
-  //   ROTATE_1ST_COLUMN_BACKWARDS,
-  //   ROTATE_2ND_COLUMN_BACKWARDS,
-  //   ROTATE_3RD_COLUMN_BACKWARDS,
-  //   ROTATE_1ST_ROW_FORWARD,
-  //   ROTATE_2ND_ROW_FORWARD,
-  //   ROTATE_3RD_ROW_FORWARD,
-  //   ROTATE_1ST_ROW_BACKWARDS,
-  //   ROTATE_2ND_ROW_BACKWARDS,
-  //   ROTATE_3RD_ROW_BACKWARDS,
-  //   ACTION_COUNT // Always last
-  // };
-
   void init();
   Game();
 

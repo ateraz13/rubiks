@@ -1,10 +1,10 @@
 #include "game.hxx"
+#include "app.hxx"
 #include "except.hxx"
 #include "gl_calls.hxx"
 #include "glog.hxx"
 #include "utility.hxx"
 #include "window.hxx"
-#include "app.hxx"
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <cmath>
@@ -70,7 +70,9 @@ void Game::init_input_system() {
 
 void Game::init_window_system() {
 
-  m_main_window = App::instance().win_sys()
+  m_main_window =
+      App::instance()
+          .win_sys()
           .new_window("main-window")
           .with_size(MAIN_WINDOW_DEFAULT_WIDTH, MAIN_WINDOW_DEFAULT_HEIGHT)
           .with_title("Rubiks!")
@@ -112,57 +114,6 @@ void Game::stop() { m_is_running = false; }
 
 void Game::update() {
 
-  // while (m_action_queue.size() > 0) {
-  //   auto action = m_action_queue.front();
-
-  //   switch (action) {
-  //   case QUIT_GAME:
-  //     std::cout << "Quiting game!\n";
-  //     this->stop();
-  //     break;
-  //   case ROTATE_1ST_COLUMN_FORWARD:
-  //     m_rcube.rotate_1st_column_forward();
-  //     break;
-  //   case ROTATE_2ND_COLUMN_FORWARD:
-  //     m_rcube.rotate_2nd_column_forward();
-  //     break;
-  //   case ROTATE_3RD_COLUMN_FORWARD:
-  //     m_rcube.rotate_3rd_column_forward();
-  //     break;
-  //   case ROTATE_1ST_COLUMN_BACKWARDS:
-  //     m_rcube.rotate_1st_column_backwards();
-  //     break;
-  //   case ROTATE_2ND_COLUMN_BACKWARDS:
-  //     m_rcube.rotate_2nd_column_backwards();
-  //     break;
-  //   case ROTATE_3RD_COLUMN_BACKWARDS:
-  //     m_rcube.rotate_3rd_column_backwards();
-  //     break;
-  //   case ROTATE_1ST_ROW_FORWARD:
-  //     m_rcube.rotate_1st_row_forward();
-  //     break;
-  //   case ROTATE_2ND_ROW_FORWARD:
-  //     m_rcube.rotate_2nd_row_forward();
-  //     break;
-  //   case ROTATE_3RD_ROW_FORWARD:
-  //     m_rcube.rotate_3rd_row_forward();
-  //     break;
-  //   case ROTATE_1ST_ROW_BACKWARDS:
-  //     m_rcube.rotate_1st_row_backwards();
-  //     break;
-  //   case ROTATE_2ND_ROW_BACKWARDS:
-  //     m_rcube.rotate_2nd_row_backwards();
-  //     break;
-  //   case ROTATE_3RD_ROW_BACKWARDS:
-  //     m_rcube.rotate_3rd_row_backwards();
-  //     break;
-  //   default:
-  //     break;
-  //   }
-
-  //   m_action_queue.pop();
-  // }
-
   using namespace std::chrono;
   auto frame_begin_time = steady_clock::now();
 
@@ -176,8 +127,6 @@ void Game::update() {
 
   m_console.draw();
 
-  // 2. Show a simple window that we create ourselves. We use a Begin/End pair
-  // to create a named window.
   {
     static float f = 0.0f;
     static int counter = 0;
@@ -192,9 +141,9 @@ void Game::update() {
         "clear color",
         (float *)&clear_color); // Edit 3 floats representing a color
 
-    if (ImGui::Button("Button")) // Buttons return true when clicked (most
-                                 // widgets return true when edited/activated)
+    if (ImGui::Button("Button")) {
       counter++;
+    }
     ImGui::SameLine();
     ImGui::Text("counter = %d", counter);
 
@@ -234,54 +183,6 @@ void Game::update() {
   m_last_frame_timepoint = frame_begin_time;
 }
 
-void RubiksCube::rotate_1st_column_forward() {
-  std::cout << "rotate_1st_column_forward" << std::endl;
-}
-
-void RubiksCube::rotate_2nd_column_forward() {
-  std::cout << "rotate_2nd_column_forward" << std::endl;
-}
-
-void RubiksCube::rotate_3rd_column_forward() {
-  std::cout << "rotate_3rd_column_forward" << std::endl;
-}
-
-void RubiksCube::rotate_1st_column_backwards() {
-  std::cout << "rotate_1st_column_backwards" << std::endl;
-}
-
-void RubiksCube::rotate_2nd_column_backwards() {
-  std::cout << "rotate_2nd_column_backwards" << std::endl;
-}
-
-void RubiksCube::rotate_3rd_column_backwards() {
-  std::cout << "rotate_3rd_column_backwards" << std::endl;
-}
-
-void RubiksCube::rotate_1st_row_forward() {
-  std::cout << "rotate_1st_row_forward" << std::endl;
-}
-
-void RubiksCube::rotate_2nd_row_forward() {
-  std::cout << "rotate_2nd_row_forward" << std::endl;
-}
-
-void RubiksCube::rotate_3rd_row_forward() {
-  std::cout << "rotate_3rd_row_forward" << std::endl;
-}
-
-void RubiksCube::rotate_1st_row_backwards() {
-  std::cout << "rotate_1st_row_backwards" << std::endl;
-}
-
-void RubiksCube::rotate_2nd_row_backwards() {
-  std::cout << "rotate_2nd_row_backwards" << std::endl;
-}
-
-void RubiksCube::rotate_3rd_row_backwards() {
-  std::cout << "rotate_3rd_row_backwards" << std::endl;
-}
-
 void RubiksCube::reset() { std::cout << "reset" << std::endl; }
 
 double Game::current_time() const { return m_current_time; }
@@ -292,5 +193,5 @@ void Game::change_viewport_size(int width, int height) {
 
 GlobalLog::GlobalLog()
     : std::ostream(
-          dynamic_cast<std::streambuf *>(&(App::instance().game().m_console))) {}
-
+          dynamic_cast<std::streambuf *>(&(App::instance().game().m_console))) {
+}
