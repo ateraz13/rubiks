@@ -1,4 +1,5 @@
 #include "gfx.hxx"
+#include "app.hxx"
 #include "game.hxx"
 #include "geom.hxx"
 #include "gl_calls.hxx"
@@ -70,7 +71,6 @@ void postcall_callback(const char *source_file, int line_num,
                        const char *func_name) {
 
   auto err = glGetError();
-
   std::cout << gl_error_string(err) << "\n";
 }
 
@@ -163,7 +163,7 @@ void gfx::Graphics::update_settings(GraphicalSettings settings) {
   m_settings = settings;
 }
 
-gfx::GPU::GPU() : cube_mesh() {}
+gfx::GPU::GPU() : triangle_mesh(), square_mesh(), cube_mesh() {}
 
 void GLAPIENTRY gl_error_callback(GLenum source, GLenum type, GLuint id,
                                   GLenum severity, GLsizei length,
@@ -336,7 +336,7 @@ void gfx::GPU::init_cube() {
 void gfx::Graphics::draw() {
   // EXPR_LOG(m_main_shader->id());
   auto viewport_size = m_viewport_size.load();
-  inspect_glViewport(0, 0, viewport_size.x, viewport_size.y);
+  glViewport(0, 0, viewport_size.x, viewport_size.y);
   m_gpu.set_aspect_ratio((float)viewport_size.x / (float)viewport_size.x);
   // EXPR_LOG((viewport_size.y / viewport_size.x));
   m_main_shader->use();
@@ -360,7 +360,7 @@ void gfx::GPU::draw() {
                                                 m_aspect_ratio, 0.1f, 100.f);
         glm::mat4 view = glm::translate(
             glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -std::abs(distance)));
-        auto time = Game::instance().current_time();
+        auto time = App::instance().game().current_time();
         view = glm::rotate(view, static_cast<float>(glm::pi<double>() * time),
                            glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -388,10 +388,10 @@ gfx::SimpleMesh::SimpleMesh() {}
 
 void gfx::SimpleMesh::init() {
   std::cout << "Buffers::COUNT = " << SIZE(BufferType::COUNT) << std::endl;
-  inspect_glGenVertexArrays(1, &m_vao);
-  inspect_glBindVertexArray(m_vao);
-  inspect_glGenBuffers(m_buffers.size(), &m_buffers[0]);
-  inspect_glBindVertexArray(0);
+  glGenVertexArrays(1, &m_vao);
+  glBindVertexArray(m_vao);
+  glGenBuffers(m_buffers.size(), &m_buffers[0]);
+  glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_mvp(const glm::mat4 &mat) {
@@ -400,47 +400,47 @@ void gfx::SimpleMesh::send_mvp(const glm::mat4 &mat) {
 
 gfx::SimpleMesh::~SimpleMesh() {
   inspect_glDeleteBuffers(SIZE(BufferType::COUNT), &m_buffers[0]);
-  inspect_glDeleteVertexArrays(1, &m_vao);
+  glDeleteVertexArrays(1, &m_vao);
 }
 
 void gfx::SimpleMesh::send_position_data(const glm::vec3 *data, size_t count) {
-  inspect_glBindVertexArray(m_vao);
-  inspect_glBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
-  inspect_glBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
-  inspect_glEnableVertexAttribArray(attrib_id(AttribType::POSITION));
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::POSITION));
+  glBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(attrib_id(AttribType::POSITION));
   EXPR_LOG(buffer_id(BufferType::POSITION));
-  inspect_glVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE,
-                         0, nullptr);
+  glVertexAttribPointer(attrib_id(AttribType::POSITION), 3, GL_FLOAT, GL_FALSE,
+                        0, nullptr);
   EXPR_LOG(attrib_id(AttribType::POSITION));
 
-  inspect_glBindVertexArray(0);
+  glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_color_data(const glm::vec4 *data, size_t count) {
-  inspect_glBindVertexArray(m_vao);
-  inspect_glBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::COLOR));
-  inspect_glBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, buffer_id(BufferType::COLOR));
+  glBufferData(GL_ARRAY_BUFFER, sizeof(*data) * count, data, GL_STATIC_DRAW);
   EXPR_LOG(attrib_id(AttribType::COLOR));
-  inspect_glEnableVertexAttribArray(attrib_id(AttribType::COLOR));
-  inspect_glVertexAttribPointer(attrib_id(AttribType::COLOR), 4, GL_FLOAT, GL_FALSE, 0,
-                         nullptr);
-  inspect_glBindVertexArray(0);
+  glEnableVertexAttribArray(attrib_id(AttribType::COLOR));
+  glVertexAttribPointer(attrib_id(AttribType::COLOR), 4, GL_FLOAT, GL_FALSE, 0,
+                        nullptr);
+  glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::send_index_data(const uint16_t *data, size_t count) {
-  inspect_glBindVertexArray(m_vao);
-  inspect_glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
-  inspect_glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
-                GL_STATIC_DRAW);
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * count, data,
+               GL_STATIC_DRAW);
   m_index_count = count;
-  inspect_glBindVertexArray(0);
+  glBindVertexArray(0);
 }
 
 void gfx::SimpleMesh::draw() {
-  inspect_glBindVertexArray(m_vao);
-  inspect_glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_id(BufferType::INDEX));
   glDrawElements(GL_TRIANGLES, m_index_count, GL_UNSIGNED_SHORT, nullptr);
-  inspect_glBindVertexArray(0);
+  glBindVertexArray(0);
 }
 
 GLuint gfx::SimpleMesh::buffer_id(BufferType buffer) {
@@ -467,6 +467,4 @@ glm::ivec2 gfx::Graphics::viewport_size() const {
   return m_viewport_size.load();
 }
 
-void gfx::GPU::set_aspect_ratio(float value) {
-  m_aspect_ratio = value;
-}
+void gfx::GPU::set_aspect_ratio(float value) { m_aspect_ratio = value; }
