@@ -6,7 +6,9 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <variant>
 #include <vector>
+#include <optional>
 
 extern size_t m_console_count;
 // FIXME: May need to be thread safe in the future.
@@ -26,7 +28,8 @@ public:
   void show();
 
 protected:
-  virtual std::streamsize xsputn(const char_type *s, std::streamsize n) override;
+  virtual std::streamsize xsputn(const char_type *s,
+                                 std::streamsize n) override;
 
 private:
   static const size_t m_prompt_capacity = 1024;
@@ -41,5 +44,40 @@ private:
   float m_last_max_scroll = 0.0f;
   std::mutex m_lock;
 };
+
+using CVal = std::variant<int, float, std::string>;
+
+namespace console_lang {
+class Scope {
+public:
+  Scope();
+  Scope(const Scope &other);
+  Scope(Scope &&other);
+  ~Scope();
+
+  void attach_parent_scope(Scope *parent_scope);
+  std::optional<std::reference_wrapper<CVal>>
+  find_binding(const std::string &name);
+
+private:
+  std::map<std::string, CVal> m_local_vars;
+  Scope *m_parent_scope = nullptr;
+};
+
+class Token {
+
+};
+
+class AST {};
+
+class Interp {
+public:
+  void run_code(const char *str, size_t count, Console &output);
+
+private:
+  Scope m_global_scope;
+  std::vector<Scope> m_sub_scopes;
+};
+} // namespace console_lang
 
 #endif // CONSOLE_HXX

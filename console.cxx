@@ -1,4 +1,5 @@
 #include "console.hxx"
+#include <functional>
 #include <imgui.h>
 #include <iostream>
 #include <utility>
@@ -144,4 +145,30 @@ void Console::draw() {
 std::streamsize Console::xsputn(const char_type* s, std::streamsize count) {
   m_output.write(s, count);
   return count;
+}
+
+console_lang::Scope::Scope() {}
+console_lang::Scope::Scope(const console_lang::Scope& other) {}
+console_lang::Scope::Scope(console_lang::Scope&& other) {}
+console_lang::Scope::~Scope() {}
+
+void console_lang::Scope::attach_parent_scope(console_lang::Scope* parent_scope) {
+  m_parent_scope = parent_scope;
+}
+
+std::optional<std::reference_wrapper<CVal>> console_lang::Scope::find_binding(const std::string &name) {
+  if(auto found = m_local_vars.find(name);
+     found != m_local_vars.end()) {
+    return found->second;
+  } else {
+    if(m_parent_scope) {
+      return m_parent_scope->find_binding(name);
+    } else {
+      return std::nullopt;
+    }
+  }
+}
+
+void console_lang::Interp::run_code(const char *str, size_t count, Console &output) {
+
 }
