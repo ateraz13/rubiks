@@ -97,9 +97,9 @@ bool is_alphabetic(char c) {
 bool is_keyword(const std::string &str) {
 
     static bool initialized = false;
-    static std::array<std::string, 8> keywords = {
+    static std::array<std::string, 10> keywords = {
         "if",     "else",   "switch",    "for",
-        "struct", "struct", "attribute", "return"};
+        "struct", "struct", "attribute", "uniform", "return", "case"};
     static std::array<decltype(std::hash<std::string>{}(std::string())),
                         keywords.size()>
         keyword_hashes;
@@ -138,6 +138,7 @@ bool is_punctuation(char c) {
     case '(':
     case ')':
     case ';':
+    case ':':
         return true;
         break;
     default:
@@ -147,11 +148,19 @@ bool is_punctuation(char c) {
 
 bool is_operator(char c) {
     switch (c) {
-    case '.':
-    case '{':
-    case '}':
-    case '[':
-    case ']':
+    case '+':
+    case '-':
+    case '/':
+    case '*':
+    case '>':
+    case '<':
+    case '|':
+    case '&':
+    case '^':
+    case '%':
+    case '!':
+    case '=':
+    case '?':
         return true;
         break;
     default:
@@ -216,8 +225,7 @@ void ShaderPreprocLexer::feed(char c) {
             m_tokens.push_back(m_context.current_token);
             m_context.current_token = ShaderPreprocLexerToken();
         } else if (is_operator(c)) {
-            start_new_tok(LEX_TOK_IDENTIFIER);
-            m_context.current_token.end++;
+            start_new_tok(LEX_TOK_OPERATOR);
             m_tokens.push_back(m_context.current_token);
             m_context.current_token = ShaderPreprocLexerToken();
         }
