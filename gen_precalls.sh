@@ -110,6 +110,8 @@ for file in "${input_files[@]}" ; do
     fi
 done
 
+echo "input_files = ${input_files[*]}"
+
 if [[ "${#input_files[@]}" -eq 0 ]]; then
     echo "Error: No input files specified"
     print_help

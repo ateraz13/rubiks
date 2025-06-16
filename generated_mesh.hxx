@@ -1,5 +1,6 @@
 #ifndef MESH
 #define MESH
+
 #include <array>
 struct SimpleMesh {
   enum struct BufferType {
@@ -22,10 +23,6 @@ private:
     "color", 
     "position", 
   };
-  const std::array<GLuint, static_cast<std::size_t>(BufferType::COUNT)> m_buffers = {
-    "color", 
-    "position", 
-  };
+  const std::array<unsigned int, static_cast<std::size_t>(BufferType::COUNT)> m_buffers = {0};
 };
-
 #endif //MESH

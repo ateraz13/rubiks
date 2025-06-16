@@ -17,7 +17,7 @@ if(PROVIDE_INSPECT_GL_DEBUG_INFO)
   add_compile_definitions(INSPECT_GL_DEBUG_INFO=1)
 endif()
 
-add_executable(gen_mesh gen_mesh.cxx shader_preproc.cxx)
+# add_executable(gen_mesh gen_mesh.cxx shader_preproc.cxx)
 add_executable(shader_preproc shader_preproc.cxx)
 
 if(USE_GLAD)
@@ -34,13 +34,14 @@ else()
   target_link_libraries(rubiks PRIVATE glm::glm glfw GLEW::GLEW ${OPENGL_opengl_LIBRARY})
 endif()
 
-add_custom_command(
-  OUTPUT
-   ${PROJECT_SOURCE_DIR}/simple_vertex_shader_data.hxx
-  DEPENDS shader_preproc
-  COMMAND shader_preproc
-   ${PROJECT_SOURCE_DIR}/shaders/simple.vertex.glsl ${PROJECT_SOURCE_DIR}/simple_vertex_shader_data.hxx
-)
+# add_custom_command(
+#   OUTPUT
+#    ${PROJECT_SOURCE_DIR}/simple_vertex_shader_data.hxx
+#   DEPENDS shader_preproc
+#   COMMAND shader_preproc
+#    ${PROJECT_SOURCE_DIR}/shaders/simple.vertex.glsl
+#    ${PROJECT_SOURCE_DIR}/simple_vertex_shader_data.hxx
+# )
 
 # add_custom_command(
 #   OUTPUT
@@ -52,7 +53,9 @@ add_custom_command(
 #    ${PROJECT_SOURCE_DIR}/generated_mesh.hxx
 # )
 
-add_executable(test_mesh test_mesh.cxx generated_mesh.cxx)
+# add_executable(test_mesh test_mesh.cxx generated_mesh.cxx)
+
+add_executable(test_preproc simple_vertex_shader_data.hxx)
 
 add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG_BUILD=1>")
 
