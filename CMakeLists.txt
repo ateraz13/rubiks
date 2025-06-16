@@ -55,7 +55,7 @@ endif()
 
 # add_executable(test_mesh test_mesh.cxx generated_mesh.cxx)
 
-add_executable(test_preproc simple_vertex_shader_data.hxx)
+add_executable(test_shader_parser simple_vertex_shader_data.hxx)
 
 add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG_BUILD=1>")
 
