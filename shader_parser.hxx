@@ -6,9 +6,12 @@
 #include <string>
 #include <vector>
 
-class ShaderPreprocAst {};
+class ShaderParserAst {
+  public:
+};
 class AttributeDefinition {};
 class UniformDefinition {};
+
 enum ShaderTokenType {
   LEX_TOK_SPACE = 0,
   LEX_TOK_KEYWORD,
@@ -18,7 +21,7 @@ enum ShaderTokenType {
   LEX_TOK_LITERAL
 };
 
-enum ShaderPreprocLexerState {
+enum ShaderLexerState {
   LEX_STATE_READING_SPACE,
   LEX_STATE_READING_IDENTIFIER,
   LEX_STATE_READING_NUMERIC_LITERAL,
@@ -26,49 +29,47 @@ enum ShaderPreprocLexerState {
   LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE,
 };
 
-struct ShaderPreprocLexerToken {
+struct ShaderLexerToken {
   size_t begin;
   size_t end;
   ShaderTokenType type;
 };
 
-std::ostream &operator<<(std::ostream &strm, const ShaderPreprocLexerToken &);
+std::ostream &operator<<(std::ostream &strm, const ShaderLexerToken &);
 
 const size_t SHADER_MAX_KEYWORD_LEN = 64;
 
-class ShaderPreprocLexer {
+class ShaderLexer {
 public:
-  ShaderPreprocLexer();
-  ShaderPreprocLexer(const ShaderPreprocLexer &&) = delete;
-  ShaderPreprocLexer(ShaderPreprocLexer &&) = delete;
-  ShaderPreprocLexer &operator=(const ShaderPreprocLexer &) = delete;
+  ShaderLexer();
+  ShaderLexer(const ShaderLexer &&) = delete;
+  ShaderLexer(ShaderLexer &&) = delete;
+  ShaderLexer &operator=(const ShaderLexer &) = delete;
 
   void feed(char c);
   void feed(const char *str);
   void finalize();
 
 private:
-  std::vector<ShaderPreprocLexerToken> m_tokens;
+  std::vector<ShaderLexerToken> m_tokens;
   struct {
-    ShaderPreprocLexerState state = LEX_STATE_READING_SPACE;
-    ShaderPreprocLexerToken current_token = {0, 0, LEX_TOK_SPACE};
+    ShaderLexerState state = LEX_STATE_READING_SPACE;
+    ShaderLexerToken current_token = {0, 0, LEX_TOK_SPACE};
     size_t position = 0;
     std::string keyword_check_str = "";
   } m_context;
-  friend class ShaderPreprocParser;
+  friend class ShaderParserParser;
   friend std::ostream &operator<<(std::ostream &strm,
-                                  const ShaderPreprocLexer &);
+                                  const ShaderLexer &);
 };
 
-class ShaderPreprocParser {};
-
-class ShaderPreproc {
+class ShaderParser {
 public:
-  ShaderPreproc();
-  ShaderPreproc(const ShaderPreproc &other) = delete;
-  ShaderPreproc(ShaderPreproc &&other) = delete;
+  ShaderParser();
+  ShaderParser(const ShaderParser &other) = delete;
+  ShaderParser(ShaderParser &&other) = delete;
 
-  ShaderPreproc &operator=(const ShaderPreproc &) = delete;
+  ShaderParser &operator=(const ShaderParser &) = delete;
 
   void parse_file(const std::string &filename);
 
@@ -76,7 +77,12 @@ public:
   virtual void uniform_definition_parsed(const UniformDefinition &ud) const;
 
 private:
-  ShaderPreprocAst m_ast;
+  ShaderLexer m_lexer;
+  ShaderParserAst m_ast;
+
+  friend std::ostream& operator<<(std::ostream& strm, const ShaderParser& parser);
 };
+
+std::ostream& operator<<(std::ostream& strm, const ShaderParser& parser);
 
 #endif // SHADER_PREPROC_HXX

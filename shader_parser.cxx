@@ -1,45 +1,41 @@
-#include "shader_preproc.hxx"
+#include "shader_parser.hxx"
 #include <algorithm>
 #include <array>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
-ShaderPreproc::ShaderPreproc() : m_ast() {}
+ShaderParser::ShaderParser() : m_ast() {}
 
-void ShaderPreproc::parse_file(const std::string &filename) {
+void ShaderParser::parse_file(const std::string &filename) {
 
     std::ifstream file(filename);
 
     if (!file.is_open() && file.good()) {
-        throw std::runtime_error("Failed to open file(Shader Preprocessor)");
+        throw std::runtime_error("Failed to open file(Shader Parseressor)");
     }
 
     std::array<char, 513> rbuf{0};
     size_t rcount = 0;
-
-    ShaderPreprocLexer lexer;
 
     while (!file.eof() && file.good()) {
         // Don't overwrite the whole buffer to keep a null byte at the end.
         file.read(&rbuf[0], rbuf.size() - 1);
         rcount = file.gcount();
 
-        lexer.feed(static_cast<const char *>(&rbuf[0]));
+        m_lexer.feed(static_cast<const char *>(&rbuf[0]));
     }
 
-    std::cout << lexer << std::endl;
-
+    m_lexer.finalize();
 }
 
-void ShaderPreproc::attribute_definition_parsed(
+void ShaderParser::attribute_definition_parsed(
     const AttributeDefinition &ad) const {}
 
-void ShaderPreproc::uniform_definition_parsed(
+void ShaderParser::uniform_definition_parsed(
     const UniformDefinition &ad) const {}
 
-std::ostream &operator<<(std::ostream &strm,
-                         const ShaderPreprocLexerToken &token) {
+std::ostream &operator<<(std::ostream &strm, const ShaderLexerToken &token) {
     strm << "{ begin = " << token.begin << ", end = " << token.end
          << ", type = ";
     switch (token.type) {
@@ -69,7 +65,7 @@ std::ostream &operator<<(std::ostream &strm,
     return strm;
 }
 
-std::ostream &operator<<(std::ostream &strm, const ShaderPreprocLexer &lexer) {
+std::ostream &operator<<(std::ostream &strm, const ShaderLexer &lexer) {
 
     strm << "Lexer { \n";
     for (auto tok : lexer.m_tokens) {
@@ -79,7 +75,7 @@ std::ostream &operator<<(std::ostream &strm, const ShaderPreprocLexer &lexer) {
     return strm;
 }
 
-ShaderPreprocLexer::ShaderPreprocLexer() : m_tokens(), m_context() {}
+ShaderLexer::ShaderLexer() : m_tokens(), m_context() {}
 
 bool is_space(char c) { return c == ' ' || c == '\t' || c == '\n'; }
 
@@ -97,24 +93,24 @@ bool is_alphabetic(char c) {
 bool is_keyword(const std::string &str) {
 
     static bool initialized = false;
-    static std::array<std::string, 10> keywords = {
-        "if",     "else",   "switch",    "for",
-        "struct", "struct", "attribute", "uniform", "return", "case"};
+    static std::array<std::string, 11> keywords = {
+        "volatile", "const",     "if",      "else",   "switch", "for",
+        "struct",   "attribute", "uniform", "return", "case"};
     static std::array<decltype(std::hash<std::string>{}(std::string())),
-                        keywords.size()>
+                      keywords.size()>
         keyword_hashes;
 
     if (!initialized) {
         auto add_keyword = [&](std::string kw) {
             static int i = 0;
-            if(i >= keywords.size()) {
+            if (i >= keywords.size()) {
                 return;
             }
             keyword_hashes[i] = std::hash<std::string>{}(kw);
             i++;
         };
 
-        for(auto kw: keywords) {
+        for (auto kw : keywords) {
             add_keyword(kw);
         }
 
@@ -168,7 +164,7 @@ bool is_operator(char c) {
     }
 }
 
-void ShaderPreprocLexer::feed(char c) {
+void ShaderLexer::feed(char c) {
 
     auto start_new_tok = [&](ShaderTokenType type) {
         std::cout << "m_context.position = " << m_context.position << "\n";
@@ -178,29 +174,33 @@ void ShaderPreprocLexer::feed(char c) {
     };
 
     auto finalize_identifier = [&]() {
-      if (is_keyword(m_context.keyword_check_str)) {
-        std::cout << "Is keyword!\n";
-        m_context.current_token.type = LEX_TOK_KEYWORD;
-      };
-      m_tokens.push_back(m_context.current_token);
-      m_context.current_token = ShaderPreprocLexerToken();
-      m_context.keyword_check_str.clear();
+        if (is_keyword(m_context.keyword_check_str)) {
+            std::cout << "Is keyword!\n";
+            m_context.current_token.type = LEX_TOK_KEYWORD;
+        };
+        m_tokens.push_back(m_context.current_token);
+        m_context.current_token = ShaderLexerToken();
+        m_context.keyword_check_str.clear();
     };
 
-    if (is_space(c) && m_context.state != LEX_STATE_READING_SPACE) {
-      if (m_context.state == LEX_STATE_READING_IDENTIFIER) {
-        finalize_identifier();
-      }
-      else {
-        m_tokens.push_back(m_context.current_token);
-      }
-      start_new_tok(LEX_TOK_SPACE);
-      m_context.state = LEX_STATE_READING_SPACE;
+    bool not_within_string_literal =
+        m_context.state != LEX_STATE_READING_STRING_LITERAL &&
+        m_context.state != LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE;
+
+    if (is_space(c) && m_context.state != LEX_STATE_READING_SPACE &&
+        not_within_string_literal) {
+        if (m_context.state == LEX_STATE_READING_IDENTIFIER) {
+            finalize_identifier();
+        } else {
+            m_tokens.push_back(m_context.current_token);
+        }
+        start_new_tok(LEX_TOK_SPACE);
+        m_context.state = LEX_STATE_READING_SPACE;
     }
 
-    if (is_space(c)) {
-      m_context.position++;
-      return;
+    if (is_space(c) && not_within_string_literal) {
+        m_context.position++;
+        return;
     }
 
     switch (m_context.state) {
@@ -223,24 +223,31 @@ void ShaderPreprocLexer::feed(char c) {
         } else if (is_punctuation(c)) {
             start_new_tok(LEX_TOK_PUNCTUATION);
             m_tokens.push_back(m_context.current_token);
-            m_context.current_token = ShaderPreprocLexerToken();
+            m_context.current_token = ShaderLexerToken();
         } else if (is_operator(c)) {
             start_new_tok(LEX_TOK_OPERATOR);
             m_tokens.push_back(m_context.current_token);
-            m_context.current_token = ShaderPreprocLexerToken();
+            m_context.current_token = ShaderLexerToken();
         }
         break;
     case LEX_STATE_READING_STRING_LITERAL:
         m_context.current_token.end++;
         if (c == '"') {
             m_tokens.push_back(m_context.current_token);
-            m_context.current_token = ShaderPreprocLexerToken();
+            m_context.current_token = ShaderLexerToken();
+            m_context.current_token.begin = m_context.position;
+            m_context.current_token.end = m_context.position;
+            m_context.current_token.type = LEX_TOK_SPACE;
+            m_context.state = LEX_STATE_READING_SPACE;
         }
         if (c == '\\') {
             m_context.state = LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE;
         }
         break;
-
+    case LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE:
+        m_context.current_token.end++;
+        m_context.state = LEX_STATE_READING_STRING_LITERAL;
+        break;
     case LEX_STATE_READING_NUMERIC_LITERAL:
         if (!is_digit(c)) {
             m_tokens.push_back(m_context.current_token);
@@ -250,31 +257,28 @@ void ShaderPreprocLexer::feed(char c) {
         }
         m_context.current_token.end++;
         break;
-    case LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE:
-        m_context.current_token.end++;
-        m_context.state = LEX_STATE_READING_STRING_LITERAL;
-        break;
     case LEX_STATE_READING_IDENTIFIER:
         if (!(is_alphabetic(c) || is_digit(c) || c == '_')) {
-          finalize_identifier();
-          m_context.current_token.begin = m_context.position;
-          m_context.current_token.end = m_context.position;
-          m_context.current_token.type = LEX_TOK_SPACE;
-          m_context.state = LEX_STATE_READING_SPACE;
-          this->feed(c);
-          return;
+            finalize_identifier();
+            m_context.current_token.begin = m_context.position;
+            m_context.current_token.end = m_context.position;
+            m_context.current_token.type = LEX_TOK_SPACE;
+            m_context.state = LEX_STATE_READING_SPACE;
+            this->feed(c);
+            return;
         } else {
-          m_context.keyword_check_str.push_back(c);
-          m_context.current_token.end++;
+            m_context.keyword_check_str.push_back(c);
+            m_context.current_token.end++;
         }
         break;
     }
 
     m_context.position++;
-    //FIXME: Currently when there is unidentified token the lexer just ignores it.
+    // FIXME: Currently when there is unidentified token the lexer just ignores
+    // it.
 }
 
-void ShaderPreprocLexer::feed(const char *str) {
+void ShaderLexer::feed(const char *str) {
     size_t i = 0;
     while (str[i] != '\0') {
         feed(str[i]);
@@ -282,11 +286,16 @@ void ShaderPreprocLexer::feed(const char *str) {
     }
 }
 
-void ShaderPreprocLexer::finalize() {
+void ShaderLexer::finalize() {
     if (m_context.state != LEX_STATE_READING_SPACE) {
         m_tokens.push_back(m_context.current_token);
-        m_context.current_token = ShaderPreprocLexerToken();
+        m_context.current_token = ShaderLexerToken();
     }
+}
+
+std::ostream &operator<<(std::ostream &strm, const ShaderParser &parser) {
+    strm << parser.m_lexer << std::endl;
+    return strm;
 }
 
 int main(int argc, char **argv) {
@@ -300,42 +309,17 @@ int main(int argc, char **argv) {
 
     std::cout << "Output file: " << argv[2] << std::endl;
     std::cout << "Input file: " << argv[1] << std::endl;
-    std::ifstream in_file(argv[1]);
     std::ofstream out_file;
 
     out_file.open(argv[2], std::ofstream::out);
-
-    if (!in_file.is_open()) {
-        std::cout << "Could not open input in_file\n";
-        return 1;
-    }
 
     if (!out_file.is_open()) {
         std::cout << "Could not open output file\n";
         return 1;
     }
 
-    std::array<char, 513> rbuf = {0};
-
-    ShaderPreprocLexer lexer;
-
-    int iter_count = 0;
-
-    while (!in_file.eof()) {
-        std::fill(rbuf.begin(), rbuf.end(), 0);
-        in_file.read(&rbuf[0], 512);
-
-        lexer.feed(&rbuf[0]);
-
-        iter_count++;
-        if (iter_count > 10) {
-            break;
-        }
-    }
-    lexer.finalize();
-
-    out_file << lexer << std::endl;
-    out_file << "//Testing testing!\n";
-    out_file << "int main() { return 0; }\n";
+    ShaderParser parser;
+    parser.parse_file(argv[1]);
+    out_file << parser << std::endl;
     out_file.close();
 }
