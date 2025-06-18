@@ -57,6 +57,9 @@ std::ostream &operator<<(std::ostream &strm, const ShaderLexerToken &token) {
     case LEX_TOK_LITERAL:
         strm << "Literal";
         break;
+    case LEX_TOK_COMMENT:
+        strm << "Comment";
+        break;
     default:
         strm << "Unknown token";
         break;
@@ -187,8 +190,14 @@ void ShaderLexer::feed(char c) {
         m_context.state != LEX_STATE_READING_STRING_LITERAL &&
         m_context.state != LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE;
 
+    bool not_within_comment =
+        !(m_context.state >= LEX_STATE_READING_SINGLE_LINE_COMMENT &&
+          m_context.state <= LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT);
+
+    bool within_normal_state = not_within_string_literal && not_within_comment;
+
     if (is_space(c) && m_context.state != LEX_STATE_READING_SPACE &&
-        not_within_string_literal) {
+        within_normal_state) {
         if (m_context.state == LEX_STATE_READING_IDENTIFIER) {
             finalize_identifier();
         } else {
@@ -198,7 +207,7 @@ void ShaderLexer::feed(char c) {
         m_context.state = LEX_STATE_READING_SPACE;
     }
 
-    if (is_space(c) && not_within_string_literal) {
+    if (is_space(c) && within_normal_state) {
         m_context.position++;
         return;
     }
@@ -226,8 +235,61 @@ void ShaderLexer::feed(char c) {
             m_context.current_token = ShaderLexerToken();
         } else if (is_operator(c)) {
             start_new_tok(LEX_TOK_OPERATOR);
+            if (c == '/') {
+                m_context.state = LEX_STATE_EXPECTING_COMMENT_OR_DIVISION_OP;
+                m_context.current_token.type = LEX_TOK_COMMENT;
+            } else {
+                m_tokens.push_back(m_context.current_token);
+                m_context.current_token = ShaderLexerToken();
+            }
+        }
+        break;
+    case LEX_STATE_EXPECTING_COMMENT_OR_DIVISION_OP:
+        // FIXME: Comments can be stacked, comments within comments
+        if (c == '/') {
+            m_context.state = LEX_STATE_READING_SINGLE_LINE_COMMENT;
+            m_context.current_token.end++;
+        } else if (c == '*') {
+            m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
+            m_context.current_token.type = LEX_TOK_COMMENT;
+            m_context.current_token.end++;
+        } else {
+            m_tokens.push_back(m_context.current_token);
+            m_context.state = LEX_STATE_READING_SPACE;
+            m_context.current_token = ShaderLexerToken();
+            this->feed(c);
+            return;
+        }
+        break;
+    case LEX_STATE_READING_SINGLE_LINE_COMMENT:
+        if (c != '\n') {
+            m_context.current_token.end++;
+        } else {
+            m_tokens.push_back(m_context.current_token);
+            m_context.state = LEX_STATE_READING_SPACE;
+            start_new_tok(LEX_TOK_SPACE);
+        }
+        break;
+    case LEX_STATE_READING_MULTI_LINE_COMMENT:
+        if (c == '*') {
+            m_context.current_token.end++;
+            m_context.state = LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT;
+        } else {
+            m_context.current_token.end++;
+        }
+        break;
+    case LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT:
+        if (c == '/') {
+            m_context.current_token.end++;
             m_tokens.push_back(m_context.current_token);
             m_context.current_token = ShaderLexerToken();
+            m_context.current_token.begin = m_context.position;
+            m_context.current_token.end = m_context.position;
+            m_context.state = LEX_STATE_READING_SPACE;
+        } else {
+            m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
+            this->feed(c);
+            return;
         }
         break;
     case LEX_STATE_READING_STRING_LITERAL:
@@ -274,8 +336,8 @@ void ShaderLexer::feed(char c) {
     }
 
     m_context.position++;
-    // FIXME: Currently when there is unidentified token the lexer just ignores
-    // it.
+    // FIXME: Currently when there is unidentified token the lexer just
+    // ignores it.
 }
 
 void ShaderLexer::feed(const char *str) {

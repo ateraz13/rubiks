@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+//NOTE: We will let the preprocessor to extract comments.
+
 class ShaderParserAst {
   public:
 };
@@ -18,7 +20,8 @@ enum ShaderTokenType {
   LEX_TOK_IDENTIFIER,
   LEX_TOK_OPERATOR,
   LEX_TOK_PUNCTUATION,
-  LEX_TOK_LITERAL
+  LEX_TOK_LITERAL,
+  LEX_TOK_COMMENT,
 };
 
 enum ShaderLexerState {
@@ -27,6 +30,11 @@ enum ShaderLexerState {
   LEX_STATE_READING_NUMERIC_LITERAL,
   LEX_STATE_READING_STRING_LITERAL,
   LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE,
+  LEX_STATE_READING_SINGLE_LINE_COMMENT, // put comment related things after
+  LEX_STATE_EXPECTING_COMMENT_OR_DIVISION_OP,
+  LEX_STATE_READING_MULTI_LINE_COMMENT,
+  LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT, // put comment related things before
+
 };
 
 struct ShaderLexerToken {
