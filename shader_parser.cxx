@@ -237,7 +237,6 @@ void ShaderLexer::feed(char c) {
             start_new_tok(LEX_TOK_OPERATOR);
             if (c == '/') {
                 m_context.state = LEX_STATE_EXPECTING_COMMENT_OR_DIVISION_OP;
-                m_context.current_token.type = LEX_TOK_COMMENT;
             } else {
                 m_tokens.push_back(m_context.current_token);
                 m_context.current_token = ShaderLexerToken();
@@ -245,12 +244,13 @@ void ShaderLexer::feed(char c) {
         }
         break;
     case LEX_STATE_EXPECTING_COMMENT_OR_DIVISION_OP:
-        // FIXME: Comments can be stacked, comments within comments
         if (c == '/') {
             m_context.state = LEX_STATE_READING_SINGLE_LINE_COMMENT;
+            m_context.current_token.type = LEX_TOK_COMMENT;
             m_context.current_token.end++;
         } else if (c == '*') {
             m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
+            m_context.multi_line_comment_depth += 1;
             m_context.current_token.type = LEX_TOK_COMMENT;
             m_context.current_token.end++;
         } else {
@@ -271,25 +271,36 @@ void ShaderLexer::feed(char c) {
         }
         break;
     case LEX_STATE_READING_MULTI_LINE_COMMENT:
-        if (c == '*') {
-            m_context.current_token.end++;
-            m_context.state = LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT;
-        } else {
-            m_context.current_token.end++;
+        m_context.current_token.end++;
+        if(c == '/') {
+          m_context.state = LEX_STATE_MAYBE_NESTED_MULTI_LINE_COMMENT;
         }
+        if (c == '*') {
+            m_context.state = LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT;
+        }
+        break;
+    case LEX_STATE_MAYBE_NESTED_MULTI_LINE_COMMENT:
+        if(c == '*') {
+            m_context.multi_line_comment_depth += 1;
+        }
+        m_context.current_token.end++;
+        m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
         break;
     case LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT:
         if (c == '/') {
-            m_context.current_token.end++;
-            m_tokens.push_back(m_context.current_token);
-            m_context.current_token = ShaderLexerToken();
-            m_context.current_token.begin = m_context.position;
-            m_context.current_token.end = m_context.position;
-            m_context.state = LEX_STATE_READING_SPACE;
+            m_context.multi_line_comment_depth -= 1;
+            if(m_context.multi_line_comment_depth == 0) {
+              m_context.current_token.end++;
+              m_tokens.push_back(m_context.current_token);
+              m_context.current_token = ShaderLexerToken();
+              m_context.current_token.begin = m_context.position;
+              m_context.current_token.end = m_context.position;
+              m_context.state = LEX_STATE_READING_SPACE;
+            }
         } else {
-            m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
-            this->feed(c);
-            return;
+          m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
+          this->feed(c);
+          return;
         }
         break;
     case LEX_STATE_READING_STRING_LITERAL:
@@ -352,6 +363,8 @@ void ShaderLexer::finalize() {
     if (m_context.state != LEX_STATE_READING_SPACE) {
         m_tokens.push_back(m_context.current_token);
         m_context.current_token = ShaderLexerToken();
+        m_context.multi_line_comment_depth = 0;
+        m_context.keyword_check_str = "";
     }
 }
 

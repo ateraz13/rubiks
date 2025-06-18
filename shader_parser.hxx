@@ -33,6 +33,7 @@ enum ShaderLexerState {
   LEX_STATE_READING_SINGLE_LINE_COMMENT, // put comment related things after
   LEX_STATE_EXPECTING_COMMENT_OR_DIVISION_OP,
   LEX_STATE_READING_MULTI_LINE_COMMENT,
+  LEX_STATE_MAYBE_NESTED_MULTI_LINE_COMMENT,
   LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT, // put comment related things before
 
 };
@@ -65,6 +66,7 @@ private:
     ShaderLexerToken current_token = {0, 0, LEX_TOK_SPACE};
     size_t position = 0;
     std::string keyword_check_str = "";
+    int multi_line_comment_depth = 0;
   } m_context;
   friend class ShaderParserParser;
   friend std::ostream &operator<<(std::ostream &strm,
