@@ -1,8 +1,11 @@
 #include "shader_parser.hxx"
 #include <algorithm>
 #include <array>
+#include <cassert>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <variant>
 #include <vector>
 
@@ -37,7 +40,7 @@ void ShaderParser::uniform_definition_parsed(
     const UniformDefinition &ad) const {}
 
 std::ostream &operator<<(std::ostream &strm, const ShaderLexerToken &token) {
-    strm << "{ begin = " << token.begin << ", end = " << token.end
+    strm << "{ begin = " << token.seg.begin << ", end = " << token.seg.end
          << ", type = ";
     switch (token.type) {
     case LEX_TOK_SPACE:
@@ -79,8 +82,6 @@ std::ostream &operator<<(std::ostream &strm, const ShaderLexer &lexer) {
     return strm;
 }
 
-ShaderLexer::ShaderLexer() : m_tokens(), m_context() {}
-
 bool is_space(char c) { return c == ' ' || c == '\t' || c == '\n'; }
 
 bool is_digit(char c) { return c >= '0' && c <= '9'; }
@@ -119,6 +120,19 @@ bool is_keyword(const std::string &str) {
         }
 
         std::sort(keyword_hashes.begin(), keyword_hashes.end());
+
+        auto prev = keyword_hashes.begin(), end = keyword_hashes.end(),
+             iter = prev++;
+
+        while (iter != end) {
+            if (*prev == *iter) {
+                throw std::runtime_error(
+                    "Hash collision detected within keyword hashes used by "
+                    "shader parser!\n");
+            }
+            iter++;
+            prev++;
+        }
 
         initialized = true;
     }
@@ -168,12 +182,43 @@ bool is_operator(char c) {
     }
 }
 
+std::optional<ShaderPreprocToken> ShaderPreprocParser::finalize() {
+    switch (m_context.state) {
+    case SPP_STATE_READING_MACRO_DEF:
+    case SPP_STATE_READING_MACRO_DEF_IDENTIFIER:
+        m_context.current_segment.end = m_context.position;
+        if (auto *fm = std::get_if<FuncLikeMacroDef>(&m_context.token)) {
+            fm->segments.push_back(m_context.current_segment);
+        } else {
+            std::get<MacroDefinition>(m_context.token).seg =
+                m_context.current_segment;
+        }
+        break;
+    }
+    if (auto *fm = std::get_if<FuncLikeMacroDef>(&m_context.token)) {
+        switch (m_context.state) {
+        case SPP_STATE_READING_MACRO_DEF_IDENTIFIER:
+            if (auto it =
+                    std::find(m_context.macro_args.begin(),
+                              m_context.macro_args.end(), m_context.tmp_str);
+                it != m_context.macro_args.end()) {
+                // FIXME: Index the argument please.
+                fm->components.push_back(FLM_COMP_ARG);
+            }
+            break;
+        default:
+            fm->components.push_back(FLM_COMP_SEGMENT);
+        }
+    }
+    return std::nullopt;
+}
+
 void ShaderLexer::feed(char c) {
 
     auto start_new_tok = [&](ShaderTokenType type) {
         std::cout << "m_context.position = " << m_context.position << "\n";
-        m_context.current_token.begin = m_context.position;
-        m_context.current_token.end = m_context.position + 1;
+        m_context.current_token.seg.begin = m_context.position;
+        m_context.current_token.seg.end = m_context.position + 1;
         m_context.current_token.type = type;
     };
 
@@ -209,8 +254,8 @@ void ShaderLexer::feed(char c) {
         } else {
             m_context.state = LEX_STATE_READING_SPACE;
             m_context.current_token = ShaderLexerToken();
-            m_context.current_token.begin = m_context.position;
-            m_context.current_token.end = m_context.position;
+            m_context.current_token.seg.begin = m_context.position;
+            m_context.current_token.seg.end = m_context.position;
             this->feed(c);
             return;
         }
@@ -256,6 +301,7 @@ void ShaderLexer::feed(char c) {
                         "Preprocessor directive not implemented!");
                 }
             }
+            m_context.state = LEX_STATE_MAYBE_PREPROC_DIRECTIVE;
         } else {
             m_context.preproc_parser.feed(c);
         }
@@ -294,12 +340,12 @@ void ShaderLexer::feed(char c) {
         if (c == '/') {
             m_context.state = LEX_STATE_READING_SINGLE_LINE_COMMENT;
             m_context.current_token.type = LEX_TOK_COMMENT;
-            m_context.current_token.end++;
+            m_context.current_token.seg.end++;
         } else if (c == '*') {
             m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
             m_context.multi_line_comment_depth += 1;
             m_context.current_token.type = LEX_TOK_COMMENT;
-            m_context.current_token.end++;
+            m_context.current_token.seg.end++;
         } else {
             m_tokens.push_back(m_context.current_token);
             m_context.state = LEX_STATE_READING_SPACE;
@@ -310,7 +356,7 @@ void ShaderLexer::feed(char c) {
         break;
     case LEX_STATE_READING_SINGLE_LINE_COMMENT:
         if (c != '\n') {
-            m_context.current_token.end++;
+            m_context.current_token.seg.end++;
         } else {
             m_tokens.push_back(m_context.current_token);
             m_context.state = LEX_STATE_READING_SPACE;
@@ -318,7 +364,7 @@ void ShaderLexer::feed(char c) {
         }
         break;
     case LEX_STATE_READING_MULTI_LINE_COMMENT:
-        m_context.current_token.end++;
+        m_context.current_token.seg.end++;
         if (c == '/') {
             m_context.state = LEX_STATE_MAYBE_NESTED_MULTI_LINE_COMMENT;
         }
@@ -330,18 +376,18 @@ void ShaderLexer::feed(char c) {
         if (c == '*') {
             m_context.multi_line_comment_depth += 1;
         }
-        m_context.current_token.end++;
+        m_context.current_token.seg.end++;
         m_context.state = LEX_STATE_READING_MULTI_LINE_COMMENT;
         break;
     case LEX_STATE_MAYBE_END_OF_MULTI_LINE_COMMENT:
         if (c == '/') {
             m_context.multi_line_comment_depth -= 1;
             if (m_context.multi_line_comment_depth == 0) {
-                m_context.current_token.end++;
+                m_context.current_token.seg.end++;
                 m_tokens.push_back(m_context.current_token);
                 m_context.current_token = ShaderLexerToken();
-                m_context.current_token.begin = m_context.position;
-                m_context.current_token.end = m_context.position;
+                m_context.current_token.seg.begin = m_context.position;
+                m_context.current_token.seg.end = m_context.position;
                 m_context.state = LEX_STATE_READING_SPACE;
             }
         } else {
@@ -351,12 +397,12 @@ void ShaderLexer::feed(char c) {
         }
         break;
     case LEX_STATE_READING_STRING_LITERAL:
-        m_context.current_token.end++;
+        m_context.current_token.seg.end++;
         if (c == '"') {
             m_tokens.push_back(m_context.current_token);
             m_context.current_token = ShaderLexerToken();
-            m_context.current_token.begin = m_context.position;
-            m_context.current_token.end = m_context.position;
+            m_context.current_token.seg.begin = m_context.position;
+            m_context.current_token.seg.end = m_context.position;
             m_context.current_token.type = LEX_TOK_SPACE;
             m_context.state = LEX_STATE_READING_SPACE;
         }
@@ -365,7 +411,7 @@ void ShaderLexer::feed(char c) {
         }
         break;
     case LEX_STATE_READING_STRING_LITERAL_WITH_ESCAPE:
-        m_context.current_token.end++;
+        m_context.current_token.seg.end++;
         m_context.state = LEX_STATE_READING_STRING_LITERAL;
         break;
     case LEX_STATE_READING_NUMERIC_LITERAL:
@@ -375,24 +421,23 @@ void ShaderLexer::feed(char c) {
             this->feed(c);
             return;
         }
-        m_context.current_token.end++;
+        m_context.current_token.seg.end++;
         break;
     case LEX_STATE_READING_IDENTIFIER:
         if (!(is_alphabetic(c) || is_digit(c) || c == '_')) {
             finalize_identifier();
-            m_context.current_token.begin = m_context.position;
-            m_context.current_token.end = m_context.position;
+            m_context.current_token.seg.begin = m_context.position;
+            m_context.current_token.seg.end = m_context.position;
             m_context.current_token.type = LEX_TOK_SPACE;
             m_context.state = LEX_STATE_READING_SPACE;
             this->feed(c);
             return;
         } else {
             m_context.keyword_check_str.push_back(c);
-            m_context.current_token.end++;
+            m_context.current_token.seg.end++;
         }
         break;
     }
-
     m_context.position++;
     // FIXME: Currently when there is unidentified token the lexer just
     // ignores it.
@@ -423,23 +468,34 @@ std::ostream &operator<<(std::ostream &strm, const ShaderParser &parser) {
 void ShaderPreprocParser::feed(char c) {
     switch (m_context.state) {
     case SPP_STATE_BEGINNING:
+        if (c != '#') {
+            throw ShaderPreprocError("Expected a # symbol");
+        }
+        m_context.state = SPP_STATE_BEFORE_DIRECTIVE_NAME;
+        break;
+    case SPP_STATE_BEFORE_DIRECTIVE_NAME:
         if (is_space(c)) {
             m_context.position++;
             return;
         }
         if (is_alphabetic(c) || is_digit(c)) {
-            m_context.tmp_str.push_back(c);
+            m_context.state = SPP_STATE_READING_DIRECTIVE_NAME;
+            this->feed(c);
+            return;
         } else {
-            throw ShaderPreprocError("Invalid token, expecting an alphabetic "
-                                     "character or an underscore!");
+            throw ShaderPreprocError(
+                "Invalid token, expecting an space, alphabetic "
+                "character or an underscore!");
         }
         break;
     case SPP_STATE_READING_DIRECTIVE_NAME:
         if (is_space(c)) {
             if (m_context.tmp_str == "define") {
                 m_context.state = SPP_STATE_READING_MACRO_NAME_DEF;
+                m_context.tmp_str.clear();
                 break;
             }
+            m_context.tmp_str.clear();
         }
         if (is_alphabetic(c) || is_digit(c) || c == '_') {
             m_context.tmp_str.push_back(c);
@@ -460,7 +516,6 @@ void ShaderPreprocParser::feed(char c) {
                                      "character or an underscore!");
         }
         break;
-        break;
     case SPP_STATE_READING_MACRO_NAME_DEF:
         if (c == '(') {
             m_context.state = SPP_STATE_READING_MACRO_ARG;
@@ -469,6 +524,11 @@ void ShaderPreprocParser::feed(char c) {
             m_context.position++;
             m_context.state = SPP_STATE_READING_MACRO_DEF;
             m_context.tmp_str.clear();
+            auto token = MacroDefinition();
+            token.seg.begin = m_context.position;
+            token.seg.end = m_context.position;
+            m_context.token = token;
+            m_context.current_segment.begin = m_context.position;
             return;
         } else if (is_alphabetic(c) || is_digit(c) || c == '_') {
             m_context.macro_name.push_back(c);
@@ -480,6 +540,7 @@ void ShaderPreprocParser::feed(char c) {
         break;
     case SPP_STATE_READING_MACRO_ARG_BEFORE:
         if (is_alphabetic(c) || c == '_') {
+            m_context.tmp_str.clear();
             m_context.tmp_str.push_back(c);
             m_context.state = SPP_STATE_READING_MACRO_ARG;
         } else if (!is_space(c)) {
@@ -490,34 +551,107 @@ void ShaderPreprocParser::feed(char c) {
     case SPP_STATE_READING_MACRO_ARG:
         // FIXME: newlines could be escaped and treated as spaces or it can be
         // done outside of the parser.
-        if (is_space(c)) {
-            m_context.state = SPP_STATE_READING_MACRO_ARG_AFTER;
-        } else if (c == ',') {
+        if (c == ',') {
             m_context.macro_args.push_back(m_context.tmp_str);
             m_context.tmp_str.clear();
+            m_context.state = SPP_STATE_READING_MACRO_ARG_BEFORE;
         } else if (is_alphabetic(c) || is_digit(c) || c == '_') {
             m_context.tmp_str.push_back(c);
         } else {
-            throw ShaderPreprocError("Invalid character, expected alphanumeric "
-                                     "character,empty space, ',' or ')'!");
+            m_context.state = SPP_STATE_READING_MACRO_ARG_AFTER;
+            this->feed(c);
+            return;
         }
+        // } else {
+        //     throw ShaderPreprocError("Invalid character, expected
+        //     alphanumeric "
+        //                              "character,empty space, ',' or ')'!");
+        // }
         break;
     case SPP_STATE_READING_MACRO_ARG_AFTER:
         if (c == ')') {
             m_context.macro_args.push_back(m_context.tmp_str);
             m_context.tmp_str.clear();
             m_context.state = SPP_STATE_READING_MACRO_DEF;
+            auto fm = FuncLikeMacroDef();
+            m_context.current_segment.begin = m_context.position + 1;
+            m_context.current_segment.end = m_context.position + 1;
+            m_context.token = fm;
+            // We require the arguments to be ordered in the way they appear in
+            // the argument list. std::sort(m_context.macro_args.begin(),
+            // m_context.macro_args.end());
         } else if (c == ',') {
             m_context.macro_args.push_back(m_context.tmp_str);
             m_context.tmp_str.clear();
             m_context.state = SPP_STATE_READING_MACRO_ARG_BEFORE;
-        } else if (c != ' ') {
+        } else if (!is_space(c)) {
             throw ShaderPreprocError(
                 "Invalid character, expected empty space, ',' or ')'!");
         }
         break;
     case SPP_STATE_READING_MACRO_DEF:
+        if (auto *macro = std::get_if<MacroDefinition>(&m_context.token)) {
+            macro->seg.end++;
+        } else if (auto *func_macro =
+                       std::get_if<FuncLikeMacroDef>(&m_context.token)) {
+            if (is_alphabetic(c) || c == '_') {
+                m_context.state = SPP_STATE_READING_MACRO_DEF_IDENTIFIER;
+                m_context.current_segment.end = m_context.position;
+                func_macro->components.push_back(FLM_COMP_SEGMENT);
+                func_macro->segments.push_back(m_context.current_segment);
+                m_context.current_segment.begin = m_context.position;
+                m_context.tmp_str.clear();
+                this->feed(c);
+                return;
+            } else if (c == '#') {
+                func_macro->segments.push_back(m_context.current_segment);
+                func_macro->components.push_back(FLM_COMP_SEGMENT);
+                m_context.state = SPP_STATE_READING_MACRO_DEF_HASH;
+            }
+        } else {
+            throw ShaderPreprocError(
+                "Invalid macro definition, there is a bug in the software!");
+        }
         break;
+    case SPP_STATE_READING_MACRO_DEF_HASH: {
+        auto func_macro = std::get<FuncLikeMacroDef>(m_context.token);
+        if (c == '#') {
+            func_macro.components.push_back(FLM_COMP_ARG_CONCAT);
+            m_context.state = SPP_STATE_READING_MACRO_DEF;
+        } else if (is_alphabetic(c) || is_digit(c) || c == '_') {
+            func_macro.components.push_back(FLM_COMP_ARG_STRINGIFY);
+            m_context.state = SPP_STATE_READING_MACRO_DEF_IDENTIFIER;
+            m_context.tmp_str.clear();
+            m_context.current_segment.begin = m_context.position;
+            m_context.current_segment.end = m_context.position + 1;
+        } else {
+            throw ShaderPreprocError("Expected an macro paramenter after '#'");
+        }
+    } break;
+    case SPP_STATE_READING_MACRO_DEF_IDENTIFIER: {
+        auto func_macro = std::get<FuncLikeMacroDef>(m_context.token);
+        if (is_alphabetic(c) || is_digit(c) || c == '_') {
+            m_context.current_segment.end++;
+            m_context.tmp_str.push_back(c);
+        } else {
+            m_context.state = SPP_STATE_READING_MACRO_DEF;
+            m_context.current_segment.end = m_context.position;
+            auto *fm = std::get_if<FuncLikeMacroDef>(&m_context.token);
+            assert(fm != nullptr);
+            auto it = std::find(m_context.macro_args.begin(),
+                                m_context.macro_args.end(), m_context.tmp_str);
+            if (it != m_context.macro_args.end()) {
+                // FIXME: We need to actually specify the index of the argument.
+                fm->components.push_back(FLM_COMP_ARG);
+            } else {
+                fm->components.push_back(FLM_COMP_SEGMENT);
+            }
+            fm->segments.push_back(m_context.current_segment);
+            m_context.current_segment.begin = m_context.position;
+            this->feed(c);
+            return;
+        }
+    } break;
     }
     m_context.position++;
 }

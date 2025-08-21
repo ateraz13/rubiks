@@ -5,23 +5,31 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+#include <optional>
 
 // NOTE: We will let the preprocessor to extract comments.
+struct TextSegment {
+  size_t begin;
+  size_t end;
+};
 
 struct MacroDefinition {
-  std::string text;
+  TextSegment seg;
+  std::string name = "";
+};
+
+enum FuncLikeMacroComponent {
+  FLM_COMP_SEGMENT,
+  FLM_COMP_ARG,
+  FLM_COMP_ARG_STR,
+  FLM_COMP_ARG_STRINGIFY,
+  FLM_COMP_ARG_CONCAT
 };
 
 struct FuncLikeMacroDef {
-  enum Component {
-    FLM_COMP_SEGMENT,
-    FLM_COMP_ARG,
-    FLM_COMP_ARG_STR,
-    FLM_COMP_ARG_STR_CONCAT_LEFT,
-    FLM_COMP_ARG_STR_CONCAT_RIGHT
-  };
-  std::vector<std::string> segments;
-  std::vector<FuncLikeMacroDef::Component> components;
+  std::vector<TextSegment> segments;
+  std::vector<FuncLikeMacroComponent > components;
+  std::string name = "";
 };
 
 using ShaderPreprocToken = std::variant<MacroDefinition, FuncLikeMacroDef>;
@@ -61,14 +69,27 @@ enum ShaderLexerState {
 };
 
 struct ShaderLexerToken {
-  size_t begin;
-  size_t end;
+  TextSegment seg;
   ShaderTokenType type;
 };
 
 std::ostream &operator<<(std::ostream &strm, const ShaderLexerToken &);
 
 const size_t SHADER_MAX_KEYWORD_LEN = 64;
+
+enum ShaderPreprocParserState {
+  SPP_STATE_BEGINNING,
+  SPP_STATE_BEFORE_DIRECTIVE_NAME,
+  SPP_STATE_READING_DIRECTIVE_NAME,
+  SPP_STATE_READING_MACRO_NAME_DEF,
+  SPP_STATE_READING_MACRO_NAME_DEF_BEGINNING,
+  SPP_STATE_READING_MACRO_ARG_BEFORE,
+  SPP_STATE_READING_MACRO_ARG,
+  SPP_STATE_READING_MACRO_ARG_AFTER,
+  SPP_STATE_READING_MACRO_DEF,
+  SPP_STATE_READING_MACRO_DEF_IDENTIFIER,
+  SPP_STATE_READING_MACRO_DEF_HASH
+};
 
 class ShaderPreprocParser {
 public:
@@ -79,28 +100,19 @@ public:
 
   void feed(char c);
   void feed(const char *str);
+  void feed(const char *str, size_t count);
 
   std::optional<ShaderPreprocToken> finalize();
 
 private:
-  enum State {
-    SPP_STATE_BEGINNING,
-    SPP_STATE_READING_DIRECTIVE_NAME,
-    SPP_STATE_READING_MACRO_NAME_DEF,
-    SPP_STATE_READING_MACRO_NAME_DEF_BEGINNING,
-    SPP_STATE_READING_MACRO_ARG_BEFORE,
-    SPP_STATE_READING_MACRO_ARG,
-    SPP_STATE_READING_MACRO_ARG_AFTER,
-    SPP_STATE_READING_MACRO_DEF,
-  };
-
   struct {
-    State state;
+    ShaderPreprocParserState state = SPP_STATE_BEGINNING;
     size_t position = 0;
     std::string tmp_str = "";
     std::string macro_name = "";
     std::vector<std::string> macro_args = {};
     ShaderPreprocToken token;
+    TextSegment current_segment;
   } m_context;
 };
 
