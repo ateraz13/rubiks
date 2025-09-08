@@ -18,7 +18,7 @@ if(PROVIDE_INSPECT_GL_DEBUG_INFO)
 endif()
 
 # add_executable(gen_mesh gen_mesh.cxx shader_preproc.cxx)
-add_executable(shader_preproc shader_preproc.cxx)
+add_executable(shader_parser shader_parser.cxx)
 
 if(USE_GLAD)
   set(GLAD_ROOT_DIR ${PROJECT_SOURCE_DIR}/extern/glad)

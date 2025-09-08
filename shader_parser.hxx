@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+#include <utility>
 #include <optional>
 
 // NOTE: We will let the preprocessor to extract comments.
@@ -30,7 +31,17 @@ struct FuncLikeMacroDef {
   std::vector<TextSegment> segments;
   std::vector<FuncLikeMacroComponent > components;
   std::string name = "";
+
+  FuncLikeMacroDef() = default;
+  FuncLikeMacroDef(const FuncLikeMacroDef& other) = default;
+  FuncLikeMacroDef(FuncLikeMacroDef&& other) = default;
+
+  FuncLikeMacroDef& operator=(const FuncLikeMacroDef& other);
+
+  friend void swap(FuncLikeMacroDef&, FuncLikeMacroDef&);
 };
+
+void swap(FuncLikeMacroDef&, FuncLikeMacroDef&);
 
 using ShaderPreprocToken = std::variant<MacroDefinition, FuncLikeMacroDef>;
 
@@ -105,7 +116,7 @@ public:
   std::optional<ShaderPreprocToken> finalize();
 
 private:
-  struct {
+  struct Context {
     ShaderPreprocParserState state = SPP_STATE_BEGINNING;
     size_t position = 0;
     std::string tmp_str = "";

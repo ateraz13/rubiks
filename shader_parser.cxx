@@ -39,6 +39,24 @@ void ShaderParser::attribute_definition_parsed(
 void ShaderParser::uniform_definition_parsed(
     const UniformDefinition &ad) const {}
 
+// FuncLikeMacroDef::FuncLikeMacroDef(const FuncLikeMacroDef& other):
+//     segments(other.segments.begin(), other.segments.end()),
+//     components(other.components.begin(), other.components.end()),
+//     name(other.name){
+// }
+
+FuncLikeMacroDef &FuncLikeMacroDef::operator=(const FuncLikeMacroDef &other) {
+    auto tmp = FuncLikeMacroDef(other);
+    std::swap(*this, tmp);
+    return *this;
+}
+
+void swap(FuncLikeMacroDef &a, FuncLikeMacroDef &b) {
+    std::swap(a.segments, b.segments);
+    std::swap(a.components, b.components);
+    std::swap(a.name, b.name);
+}
+
 std::ostream &operator<<(std::ostream &strm, const ShaderLexerToken &token) {
     strm << "{ begin = " << token.seg.begin << ", end = " << token.seg.end
          << ", type = ";
@@ -210,7 +228,11 @@ std::optional<ShaderPreprocToken> ShaderPreprocParser::finalize() {
             fm->components.push_back(FLM_COMP_SEGMENT);
         }
     }
-    return std::nullopt;
+
+    ShaderPreprocToken token(m_context.token);
+    m_context = Context();
+
+    return token;
 }
 
 void ShaderLexer::feed(char c) {
@@ -284,11 +306,8 @@ void ShaderLexer::feed(char c) {
     case LEX_STATE_READING_PREPROC_DIRECTIVE:
         // FIXME: implement newline escapes
         if (c == '\n') {
-            // NOTE: FINALIZE preproc parsing
-            m_context.preproc_parser.finalize();
 
-            if (auto maybe_val = m_context.preproc_parser.finalize();
-                maybe_val) {
+            if (auto maybe_val = m_context.preproc_parser.finalize()) {
                 auto val = *maybe_val;
 
                 if (std::holds_alternative<MacroDefinition>(val)) {
@@ -451,6 +470,8 @@ void ShaderLexer::feed(const char *str) {
     }
 }
 
+void after_finalize() { return; }
+
 void ShaderLexer::finalize() {
     if (m_context.state != LEX_STATE_READING_SPACE) {
         m_tokens.push_back(m_context.current_token);
@@ -458,6 +479,8 @@ void ShaderLexer::finalize() {
         m_context.multi_line_comment_depth = 0;
         m_context.keyword_check_str = "";
     }
+
+    after_finalize();
 }
 
 std::ostream &operator<<(std::ostream &strm, const ShaderParser &parser) {
@@ -606,6 +629,7 @@ void ShaderPreprocParser::feed(char c) {
             } else if (c == '#') {
                 func_macro->segments.push_back(m_context.current_segment);
                 func_macro->components.push_back(FLM_COMP_SEGMENT);
+                func_macro->components.push_back(FLM_COMP_ARG_STR);
                 m_context.state = SPP_STATE_READING_MACRO_DEF_HASH;
             }
         } else {
@@ -616,10 +640,10 @@ void ShaderPreprocParser::feed(char c) {
     case SPP_STATE_READING_MACRO_DEF_HASH: {
         auto func_macro = std::get<FuncLikeMacroDef>(m_context.token);
         if (c == '#') {
-            func_macro.components.push_back(FLM_COMP_ARG_CONCAT);
+            func_macro.components[func_macro.components.size() - 1] =
+                FLM_COMP_ARG_CONCAT;
             m_context.state = SPP_STATE_READING_MACRO_DEF;
         } else if (is_alphabetic(c) || is_digit(c) || c == '_') {
-            func_macro.components.push_back(FLM_COMP_ARG_STRINGIFY);
             m_context.state = SPP_STATE_READING_MACRO_DEF_IDENTIFIER;
             m_context.tmp_str.clear();
             m_context.current_segment.begin = m_context.position;
