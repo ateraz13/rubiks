@@ -306,7 +306,6 @@ void ShaderLexer::feed(char c) {
     case LEX_STATE_READING_PREPROC_DIRECTIVE:
         // FIXME: implement newline escapes
         if (c == '\n') {
-
             if (auto maybe_val = m_context.preproc_parser.finalize()) {
                 auto val = *maybe_val;
 
@@ -456,6 +455,10 @@ void ShaderLexer::feed(char c) {
             m_context.current_token.seg.end++;
         }
         break;
+
+    default:
+        throw ShaderPreprocError("Invalid state in Shader Preprocessor.");
+        break;
     }
     m_context.position++;
     // FIXME: Currently when there is unidentified token the lexer just
@@ -473,11 +476,16 @@ void ShaderLexer::feed(const char *str) {
 void after_finalize() { return; }
 
 void ShaderLexer::finalize() {
-    if (m_context.state != LEX_STATE_READING_SPACE) {
+    switch (m_context.state) {
+    case LEX_STATE_READING_SPACE:
+    case LEX_STATE_MAYBE_PREPROC_DIRECTIVE:
         m_tokens.push_back(m_context.current_token);
         m_context.current_token = ShaderLexerToken();
         m_context.multi_line_comment_depth = 0;
         m_context.keyword_check_str = "";
+        break;
+    default:
+        break;
     }
 
     after_finalize();
@@ -541,20 +549,28 @@ void ShaderPreprocParser::feed(char c) {
         break;
     case SPP_STATE_READING_MACRO_NAME_DEF:
         if (c == '(') {
+            auto fm = FuncLikeMacroDef();
+            fm.name = m_context.tmp_str;
+            std::cout << "tmp_str (fm name def) = \"" << m_context.tmp_str
+                      << "\"\n";
+            m_context.tmp_str.clear();
+            m_context.token = fm;
             m_context.state = SPP_STATE_READING_MACRO_ARG;
             break;
         } else if (is_space(c)) {
             m_context.position++;
             m_context.state = SPP_STATE_READING_MACRO_DEF;
+            auto macro = MacroDefinition();
+            macro.name = m_context.tmp_str;
             m_context.tmp_str.clear();
-            auto token = MacroDefinition();
-            token.seg.begin = m_context.position;
-            token.seg.end = m_context.position;
-            m_context.token = token;
+            macro.seg.begin = m_context.position;
+            macro.seg.end = m_context.position;
+            m_context.token = macro;
             m_context.current_segment.begin = m_context.position;
+            m_context.current_segment.end = m_context.position;
             return;
         } else if (is_alphabetic(c) || is_digit(c) || c == '_') {
-            m_context.macro_name.push_back(c);
+            m_context.tmp_str.push_back(c);
         } else {
             throw ShaderPreprocError(
                 "Invalid token, expecting an alphabetic, numeric characters "
@@ -596,10 +612,8 @@ void ShaderPreprocParser::feed(char c) {
             m_context.macro_args.push_back(m_context.tmp_str);
             m_context.tmp_str.clear();
             m_context.state = SPP_STATE_READING_MACRO_DEF;
-            auto fm = FuncLikeMacroDef();
             m_context.current_segment.begin = m_context.position + 1;
             m_context.current_segment.end = m_context.position + 1;
-            m_context.token = fm;
             // We require the arguments to be ordered in the way they appear in
             // the argument list. std::sort(m_context.macro_args.begin(),
             // m_context.macro_args.end());
