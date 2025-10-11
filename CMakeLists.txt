@@ -34,6 +34,10 @@ else()
   target_link_libraries(rubiks PRIVATE glm::glm glfw GLEW::GLEW ${OPENGL_opengl_LIBRARY})
 endif()
 
+include_directories(./extern/googletest/include)
+add_subdirectory(./extern/googletest)
+add_subdirectory(./tests)
+
 # add_custom_command(
 #   OUTPUT
 #    ${PROJECT_SOURCE_DIR}/simple_vertex_shader_data.hxx
@@ -55,7 +59,7 @@ endif()
 
 # add_executable(test_mesh test_mesh.cxx generated_mesh.cxx)
 
-add_executable(test_shader_parser simple_vertex_shader_data.hxx)
+# add_executable(test_shader_parser simple_vertex_shader_data.hxx)
 
 add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG_BUILD=1>")
 
@@ -63,3 +67,5 @@ add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG_BUILD=1>")
 # target_link_libraries(test PRIVATE glm::glm glfw GLEW::GLEW ${OPENGL_opengl_LIBRARY})
 
 set_property(TARGET rubiks PROPERTY CXX_STANDARD 20)
+
+add_executable(bin2c bin2c.cxx)
