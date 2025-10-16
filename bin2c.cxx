@@ -3,8 +3,9 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <vector>
 #include <optional>
+#include <string>
+#include <vector>
 
 const size_t READ_BUFFER_SIZE = 512;
 const size_t BYTES_PER_LINE = 16;
@@ -61,8 +62,8 @@ void CmdLine::parse(int argc, char **argv) {
 
     for (int i = 1; i < argc; i++) {
 
-        if(state == CMDLN_EXPECT_OUTPUT_FILENAME) {
-            if(argv[i][0] != 0) {
+        if (state == CMDLN_EXPECT_OUTPUT_FILENAME) {
+            if (argv[i][0] != 0) {
                 output_filename = std::string(argv[i]);
             }
             state = CMDLN_EXPECT_INPUT_FILENAME;
@@ -70,8 +71,9 @@ void CmdLine::parse(int argc, char **argv) {
         }
 
         if (argv[i] && argv[i][0] == '-') {
-            if(state == CMDLN_EXPECT_BUFFER_NAME) {
-                throw MalformedCmd("Expected buffer name but found option directive instead!");
+            if (state == CMDLN_EXPECT_BUFFER_NAME) {
+                throw MalformedCmd(
+                    "Expected buffer name but found option directive instead!");
             }
 
             if (argv[i][1] != 'o' && argv[i][1] != 0) {
@@ -84,8 +86,7 @@ void CmdLine::parse(int argc, char **argv) {
             continue;
         }
 
-
-        if(state == CMDLN_EXPECT_BUFFER_NAME) {
+        if (state == CMDLN_EXPECT_BUFFER_NAME) {
             current_arg.buffer_name = std::string(argv[i]);
             cmd_args.push_back(current_arg);
             current_arg = CmdArg();
@@ -93,7 +94,7 @@ void CmdLine::parse(int argc, char **argv) {
             continue;
         }
 
-        if(state == CMDLN_EXPECT_INPUT_FILENAME) {
+        if (state == CMDLN_EXPECT_INPUT_FILENAME) {
             current_arg.filename = std::string(argv[i]);
             state = CMDLN_EXPECT_BUFFER_NAME;
             continue;
@@ -113,18 +114,28 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    for(auto arg: cmd_line.cmd_args) {
-        std::cout << "filename = " << arg.filename << ", buffer_name = " << arg.buffer_name << std::endl;
+    for (auto arg : cmd_line.cmd_args) {
+        std::cout << "filename = " << arg.filename
+                  << ", buffer_name = " << arg.buffer_name << std::endl;
     }
 
-    if(cmd_line.output_filename) {
-        std::cout << "Output filename = " << *cmd_line.output_filename << std::endl;
+    if (cmd_line.output_filename) {
+        std::cout << "Output filename = " << *cmd_line.output_filename
+                  << std::endl;
     }
 
     std::array<char, READ_BUFFER_SIZE> read_buffer;
     size_t read_count = 0;
 
-    for (auto arg: cmd_line.cmd_args) {
+    std::ostream *ostrm = &std::cout;
+    std::fstream output_file;
+
+    if (cmd_line.output_filename) {
+        output_file.open(*cmd_line.output_filename, std::fstream::out);
+        ostrm = reinterpret_cast<std::ostream *>(&output_file);
+    }
+
+    for (auto arg : cmd_line.cmd_args) {
         std::ifstream file(arg.filename, std::ios::in | std::ios::binary);
         size_t total_bytes = 0;
 
@@ -134,7 +145,7 @@ int main(int argc, char **argv) {
         }
 
         std::cout << "/* FILE: " << arg.filename << " */\n";
-        std::cout << "const char " << arg.buffer_name << "[] = {\n";
+        *ostrm << "const char " << arg.buffer_name << "[] = {\n";
 
         while (!file.eof()) {
             uint8_t byte = 0;
@@ -145,50 +156,47 @@ int main(int argc, char **argv) {
 
             size_t remaning_bytes_on_first_line = total_bytes % BYTES_PER_LINE;
 
-            auto print_byte = [](char a) {
-                std::cout << "0x" << std::setw(2) << std::setfill('0')
-                          << std::hex << static_cast<uint32_t>(a) << ", ";
+            size_t local_total_bytes = 0;
+
+            auto print_byte = [&](char a) {
+                std::string rep;
+                switch (a) {
+                case ' ':
+                    rep = "\\s ";
+                    break;
+                case '\t':
+                    rep = "\\ţ ";
+                    break;
+                case '\n':
+                    rep = "\\n ";
+                    break;
+                default:
+                    const char s[] = {' ', a, ' ', 0x00};
+                    rep = s;
+                    break;
+                }
+                *ostrm << "0x" << std::setw(2) << std::setfill('0') << std::hex
+                       << static_cast<uint32_t>(a) << "/* " << rep << " */, ";
+                total_bytes++;
+                local_total_bytes++;
             };
 
-            // Complete unfinished line if any
-            for (int x = 0;
-                 x < std::min(remaning_bytes_on_first_line, read_count); x++) {
+            for(int x = 0; x != read_count; x++) {
                 print_byte(read_buffer[x]);
-                total_bytes++;
-            }
-
-            std::cout << "\n";
-
-            // Write Complete lines
-            for (int y = 0; y < ((read_count - remaning_bytes_on_first_line) %
-                                 BYTES_PER_LINE);
-                 y++) {
-                for (int x = 0; x < BYTES_PER_LINE; x++) {
-                    print_byte(read_buffer[remaning_bytes_on_first_line +
-                                           (y * BYTES_PER_LINE) + x]);
-                    total_bytes++;
+                if(total_bytes % BYTES_PER_LINE == 0) {
+                    *ostrm << "\n";
                 }
-                std::cout << "\n";
-            }
-
-            int bytes_writen_this_iteration =
-                remaning_bytes_on_first_line +
-                ((read_count - remaning_bytes_on_first_line) % BYTES_PER_LINE);
-            int remaning_byte_on_last_line =
-                read_count - bytes_writen_this_iteration;
-
-            for (int x = 0; x < remaning_bytes_on_first_line; x++) {
-                print_byte(read_buffer[x + bytes_writen_this_iteration]);
-                total_bytes++;
             }
         }
 
-        std::cout << "\n};\n\n";
+        *ostrm << "\n};\n\n";
         file.close();
     }
+    output_file.close();
 }
 
 void print_help(const std::string &executable_name) {
     std::cout << executable_name
-              << " <file_name> <buffer_name> ...  [-o <output_file>]" << std::endl;
+              << " <file_name> <buffer_name> ...  [-o <output_file>]"
+              << std::endl;
 }
