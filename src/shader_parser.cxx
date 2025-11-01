@@ -709,28 +709,28 @@ void ShaderPreprocParser::feed(const char *str, size_t count) {
     }
 }
 
-int main(int argc, char **argv) {
+// int main(int argc, char **argv) {
 
-    if (argc < 3) {
-        std::cerr << "Specify input and output files" << std::endl;
-        return 1;
-    }
+//     if (argc < 3) {
+//         std::cerr << "Specify input and output files" << std::endl;
+//         return 1;
+//     }
 
-    std::cout << "Hello, world!\n";
+//     std::cout << "Hello, world!\n";
 
-    std::cout << "Output file: " << argv[2] << std::endl;
-    std::cout << "Input file: " << argv[1] << std::endl;
-    std::ofstream out_file;
+//     std::cout << "Output file: " << argv[2] << std::endl;
+//     std::cout << "Input file: " << argv[1] << std::endl;
+//     std::ofstream out_file;
 
-    out_file.open(argv[2], std::ofstream::out);
+//     out_file.open(argv[2], std::ofstream::out);
 
-    if (!out_file.is_open()) {
-        std::cout << "Could not open output file\n";
-        return 1;
-    }
+//     if (!out_file.is_open()) {
+//         std::cout << "Could not open output file\n";
+//         return 1;
+//     }
 
-    ShaderParser parser;
-    parser.parse_file(argv[1]);
-    out_file << parser << std::endl;
-    out_file.close();
-}
+//     ShaderParser parser;
+//     parser.parse_file(argv[1]);
+//     out_file << parser << std::endl;
+//     out_file.close();
+// }
