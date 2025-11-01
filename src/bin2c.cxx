@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 
     if (cmd_line.output_filename) {
         output_file.open(*cmd_line.output_filename, std::fstream::out);
-        ostrm = reinterpret_cast<std::ostream *>(&output_file);
+        ostrm = &output_file;
     }
 
     for (auto arg : cmd_line.cmd_args) {
