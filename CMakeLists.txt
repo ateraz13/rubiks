@@ -8,7 +8,8 @@ add_subdirectory(extern/glfw-3.4)
 
 find_package(glm CONFIG REQUIRED)
 
-set(RUBIKS_SOURCE_FILES main.cxx gfx.cxx geom.cxx game.cxx utility.cxx gl.cxx shader.cxx gl_calls.cxx window.cxx keys.cxx console.cxx command.cxx app.cxx)
+set(RUBIKS_SOURCE_FILES src/main.cxx src/gfx.cxx src/geom.cxx src/game.cxx src/utility.cxx src/gl.cxx src/shader.cxx src/gl_calls.cxx src/window.cxx src/keys.cxx src/console.cxx src/command.cxx src/app.cxx)
+set(SHADER_PARSER_SOURCE_FILES src/shader_parser.cxx)
 
 file(GLOB IMGUI_SOURCE_FILES extern/imgui/*.cpp)
 set(IMGUI_SOURCE_FILES ${IMGUI_SOURCE_FILES} extern/imgui/backends/imgui_impl_glfw.cpp extern/imgui/backends/imgui_impl_opengl3.cpp)
@@ -18,7 +19,7 @@ if(PROVIDE_INSPECT_GL_DEBUG_INFO)
 endif()
 
 # add_executable(gen_mesh gen_mesh.cxx shader_preproc.cxx)
-add_executable(shader_parser shader_parser.cxx)
+add_library(shader_parser ${SHADER_PARSER_SOURCE_FILES})
 
 if(USE_GLAD)
   set(GLAD_ROOT_DIR ${PROJECT_SOURCE_DIR}/extern/glad)
@@ -34,9 +35,9 @@ else()
   target_link_libraries(rubiks PRIVATE glm::glm glfw GLEW::GLEW ${OPENGL_opengl_LIBRARY})
 endif()
 
-include_directories(./extern/googletest/include)
-add_subdirectory(./extern/googletest)
-add_subdirectory(./tests)
+include_directories(${CMAKE_SOURCE_DIR}/extern/googletest/include)
+add_subdirectory(${CMAKE_SOURCE_DIR}/extern/googletest)
+add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
 
 # add_custom_command(
 #   OUTPUT
@@ -58,7 +59,6 @@ add_subdirectory(./tests)
 # )
 
 # add_executable(test_mesh test_mesh.cxx generated_mesh.cxx)
-
 # add_executable(test_shader_parser simple_vertex_shader_data.hxx)
 
 add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG_BUILD=1>")
@@ -67,5 +67,4 @@ add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG_BUILD=1>")
 # target_link_libraries(test PRIVATE glm::glm glfw GLEW::GLEW ${OPENGL_opengl_LIBRARY})
 
 set_property(TARGET rubiks PROPERTY CXX_STANDARD 20)
-
-add_executable(bin2c bin2c.cxx)
+add_executable(bin2c src/bin2c.cxx)
