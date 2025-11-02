@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-build_dir=./build-x86-64-linux
+build_dir_name=build-x86-64-linux
 do_clean_build=0
 do_debug_build=0
 do_gl_debug_build=0
@@ -89,7 +89,7 @@ for x in "$@"; do
     esac
 done
 
-build_dir=$(cd "$build_dir" || exit ; pwd)
+build_dir="$PWD/$build_dir_name"
 
 if [[ "$do_gl_debug_build" -eq 1 ]] ; then
     rm gl_calls.cxx gl_calls.hxx
