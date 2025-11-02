@@ -5,3 +5,5 @@ tmp/
 .cache/
 compile_commands.json
 build*/
+tests/file_includes
+tests/file_includes/*

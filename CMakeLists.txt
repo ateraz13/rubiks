@@ -36,6 +36,7 @@ else()
 endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/extern/googletest/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 add_subdirectory(${CMAKE_SOURCE_DIR}/extern/googletest)
 add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
 
