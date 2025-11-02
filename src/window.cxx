@@ -1,13 +1,13 @@
-#include "window.hxx"
-#include "except.hxx"
-#include "game.hxx"
-#include "glog.hxx"
+#include <rubiks/window.hxx>
+#include <rubiks/except.hxx>
+#include <rubiks/game.hxx>
+#include <rubiks/glog.hxx>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
-#include "app.hxx"
+#include <rubiks/app.hxx>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-#include "gl.hxx"
+#include <rubiks/gl.hxx>
 #include <optional>
 
 // FIXME: These won't work by them self, mutex is required and it needs to be locked

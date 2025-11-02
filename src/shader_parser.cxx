@@ -1,4 +1,4 @@
-#include "shader_parser.hxx"
+#include <rubiks/shader_parser.hxx>
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -16,7 +16,7 @@ void ShaderParser::parse_file(const std::string &filename) {
     std::ifstream file(filename);
 
     if (!file.is_open() && file.good()) {
-        throw std::runtime_error("Failed to open file(Shader Parseressor)");
+        throw std::runtime_error("Failed to open file(Shader Parser)");
     }
 
     std::array<char, 513> rbuf{0};

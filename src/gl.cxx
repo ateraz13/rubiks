@@ -1,4 +1,4 @@
-#include "gl.hxx"
+#include <rubiks/gl.hxx>
 #include <iostream>
 #include <sstream>
 

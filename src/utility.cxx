@@ -1,4 +1,4 @@
-#include "utility.hxx"
+#include <rubiks/utility.hxx>
 #include <fstream>
 
 std::optional<std::string> read_text_file(const std::string& path) {

@@ -1,8 +1,8 @@
 #include <iostream>
-#include "gfx.hxx"
-#include "game.hxx"
-#include "utility.hxx"
-#include "app.hxx"
+#include <rubiks/gfx.hxx>
+#include <rubiks/game.hxx>
+#include <rubiks/utility.hxx>
+#include <rubiks/app.hxx>
 
 int main(int argc, char** argv) {
     App &app = App::instance();

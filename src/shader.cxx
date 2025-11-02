@@ -1,7 +1,7 @@
-#include "gfx.hxx"
-#include "iterator.hxx"
-#include "utility.hxx"
-#include "gl_calls.hxx"
+#include <rubiks/gfx.hxx>
+#include <rubiks/iterator.hxx>
+#include <rubiks/utility.hxx>
+#include <rubiks/gl_calls.hxx>
 
 std::string stringify_shader_type(GLenum shader_type) {
   switch (shader_type) {

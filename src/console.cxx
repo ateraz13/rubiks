@@ -1,4 +1,4 @@
-#include "console.hxx"
+#include <rubiks/console.hxx>
 #include <functional>
 #include <imgui.h>
 #include <iostream>

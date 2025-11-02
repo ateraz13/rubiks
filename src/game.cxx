@@ -1,10 +1,10 @@
-#include "game.hxx"
-#include "app.hxx"
-#include "except.hxx"
-#include "gl_calls.hxx"
-#include "glog.hxx"
-#include "utility.hxx"
-#include "window.hxx"
+#include <rubiks/game.hxx>
+#include <rubiks/app.hxx>
+#include <rubiks/except.hxx>
+#include <rubiks/gl_calls.hxx>
+#include <rubiks/glog.hxx>
+#include <rubiks/utility.hxx>
+#include <rubiks/window.hxx>
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <cmath>

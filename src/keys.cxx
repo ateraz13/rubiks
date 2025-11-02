@@ -1,4 +1,4 @@
-#include "keys.hxx"
+#include <rubiks/keys.hxx>
 #include <cstdint>
 #include <map>
 

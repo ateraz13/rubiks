@@ -1,6 +1,6 @@
-#include "command.hxx"
+#include <rubiks/command.hxx>
+#include <rubiks/glog.hxx>
 #include <memory>
-#include "glog.hxx"
 #include <iostream>
 
 Command::Command() {};

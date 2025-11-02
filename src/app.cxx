@@ -1,4 +1,4 @@
-#include "app.hxx"
+#include <rubiks/app.hxx>
 
 App& App::instance() {
     static App inst;

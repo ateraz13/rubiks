@@ -1,4 +1,4 @@
-#include "geom.hxx"
+#include <rubiks/geom.hxx>
 #include <optional>
 
 namespace geom {
