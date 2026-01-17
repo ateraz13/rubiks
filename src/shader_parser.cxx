@@ -33,6 +33,11 @@ void ShaderParser::parse_file(const std::string &filename) {
     m_lexer.finalize();
 }
 
+void ShaderParser::parse_buffer(const char* buffer, size_t count) {
+    m_lexer.feed(buffer, count);
+    m_lexer.finalize();
+}
+
 void ShaderParser::attribute_definition_parsed(
     const AttributeDefinition &ad) const {}
 
@@ -470,6 +475,12 @@ void ShaderLexer::feed(const char *str) {
     while (str[i] != '\0') {
         feed(str[i]);
         i++;
+    }
+}
+
+void ShaderLexer::feed(const char* buffer, size_t count) {
+    for(size_t i = 0; i < count; i++) {
+        feed(buffer[i]);
     }
 }
 

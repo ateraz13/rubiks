@@ -165,6 +165,7 @@ public:
   ShaderParser &operator=(const ShaderParser &) = delete;
 
   void parse_file(const std::string &filename);
+  void parse_buffer(const char* buffer, size_t count);
 
   virtual void attribute_definition_parsed(const AttributeDefinition &ad) const;
   virtual void uniform_definition_parsed(const UniformDefinition &ud) const;
