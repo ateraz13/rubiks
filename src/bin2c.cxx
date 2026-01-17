@@ -6,14 +6,17 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 const size_t READ_BUFFER_SIZE = 512;
 const size_t BYTES_PER_LINE = 16;
 
 void print_help(const std::string &executable_name);
 
+namespace fs = std::filesystem;
+
 struct CmdArg {
-    std::string filename;
+    fs::path filename;
     std::string buffer_name;
 
     CmdArg(const char *fn, const char *bn) : filename(fn), buffer_name(bn) {}
@@ -27,7 +30,7 @@ struct CmdArg {
 
 struct CmdLine {
     std::string executable_name;
-    std::optional<std::string> output_filename;
+    std::optional<fs::path> output_filename;
     std::vector<CmdArg> cmd_args;
 
     CmdLine() = default;
@@ -102,9 +105,7 @@ void CmdLine::parse(int argc, char **argv) {
     }
 }
 
-int main(int argc, char **argv) {
-
-    CmdLine cmd_line;
+int main(int argc, char **argv) {CmdLine cmd_line;
 
     try {
         cmd_line.parse(argc, argv);
@@ -131,67 +132,74 @@ int main(int argc, char **argv) {
     std::fstream output_file;
 
     if (cmd_line.output_filename) {
+
+        auto fn = *cmd_line.output_filename;
+        if(fn.has_parent_path() && !fs::exists(fn.parent_path()) ) {
+            fs::create_directory(fn.parent_path());
+        }
         output_file.open(*cmd_line.output_filename, std::fstream::out);
         ostrm = &output_file;
     }
 
     for (auto arg : cmd_line.cmd_args) {
-        std::ifstream file(arg.filename, std::ios::in | std::ios::binary);
-        size_t total_bytes = 0;
+      std::ifstream file(arg.filename, std::ios::in | std::ios::binary);
+      size_t total_bytes = 0;
 
-        if (!file.is_open() || file.bad()) {
-            std::cout << "Invalid file: " << arg.filename << std::endl;
-            exit(1);
+      if (!file.is_open() || file.bad()) {
+        std::cout << "Invalid file: " << arg.filename << std::endl;
+        exit(1);
+      }
+
+      *ostrm << "/* FILE: " << arg.filename << " */\n";
+      *ostrm << "const char " << arg.buffer_name << "[] = {\n";
+
+      while (!file.eof()) {
+        uint8_t byte = 0;
+        read_count = 0;
+        std::fill(read_buffer.begin(), read_buffer.end(), 0);
+        file.read(&read_buffer[0], read_buffer.size());
+        read_count = file.gcount();
+
+        size_t remaning_bytes_on_first_line = total_bytes % BYTES_PER_LINE;
+
+        size_t local_total_bytes = 0;
+
+        auto print_byte = [&](char a) {
+          std::string rep;
+          switch (a) {
+          case ' ':
+            rep = "\\s ";
+            break;
+          case '\t':
+            rep = "\\t ";
+            break;
+          case '\n':
+            rep = "\\n ";
+            break;
+          default:
+            const char s[] = {' ', a, ' ', 0x00};
+            rep = s;
+            break;
+          }
+          *ostrm << "0x" << std::setw(2) << std::setfill('0') << std::hex
+                 << static_cast<uint32_t>(a) << "/* " << rep << " */, ";
+          total_bytes++;
+          local_total_bytes++;
+        };
+
+        for (int x = 0; x != read_count; x++) {
+          print_byte(read_buffer[x]);
+          if (total_bytes % BYTES_PER_LINE == 0) {
+            *ostrm << "\n";
+          }
         }
+      }
 
-        std::cout << "/* FILE: " << arg.filename << " */\n";
-        *ostrm << "const char " << arg.buffer_name << "[] = {\n";
-
-        while (!file.eof()) {
-            uint8_t byte = 0;
-            read_count = 0;
-            std::fill(read_buffer.begin(), read_buffer.end(), 0);
-            file.read(&read_buffer[0], read_buffer.size());
-            read_count = file.gcount();
-
-            size_t remaning_bytes_on_first_line = total_bytes % BYTES_PER_LINE;
-
-            size_t local_total_bytes = 0;
-
-            auto print_byte = [&](char a) {
-                std::string rep;
-                switch (a) {
-                case ' ':
-                    rep = "\\s ";
-                    break;
-                case '\t':
-                    rep = "\\ţ ";
-                    break;
-                case '\n':
-                    rep = "\\n ";
-                    break;
-                default:
-                    const char s[] = {' ', a, ' ', 0x00};
-                    rep = s;
-                    break;
-                }
-                *ostrm << "0x" << std::setw(2) << std::setfill('0') << std::hex
-                       << static_cast<uint32_t>(a) << "/* " << rep << " */, ";
-                total_bytes++;
-                local_total_bytes++;
-            };
-
-            for(int x = 0; x != read_count; x++) {
-                print_byte(read_buffer[x]);
-                if(total_bytes % BYTES_PER_LINE == 0) {
-                    *ostrm << "\n";
-                }
-            }
-        }
-
-        *ostrm << "\n};\n\n";
-        file.close();
+      *ostrm << "\n};\n\n";
+      file.close();
     }
+
+    output_file.sync();
     output_file.close();
 }
 
